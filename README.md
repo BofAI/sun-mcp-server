@@ -35,16 +35,13 @@ Primary use cases:
 ## Supported SUN.IO API Domains
 
 - **Transactions**: scan swap/add/withdraw activity with pagination.
-- **Tokens**: fetch token metadata, search tokens, and scan token lists.
-- **SUN Token**: query SUN burn log statistics.
+- **Tokens**: fetch token metadata, search tokens.
 - **Protocols**: fetch protocol snapshots and historical KPI series.
 - **Prices**: fetch token price by address.
 - **Positions**: query user liquidity positions and tick-level data.
-- **Pools**: list/search/scan pools, fetch top APY pools, hooks, and pool history.
+- **Pools**: list/search pools, fetch top APY pools, hooks, and pool history.
 - **Pairs**: query token pair information.
 - **Farms**: list farms, scan farm transactions, query user farm positions.
-- **Contracts**: scan contract registry entries.
-- **Chain**: fetch latest block info.
 
 ## API Reference (from `sunio-open-api.json`)
 
@@ -56,7 +53,6 @@ Primary use cases:
 
 - `getTokens` (`GET /apiv2/tokens`): fetch tokens by address and protocol.
 - `searchTokens` (`GET /apiv2/tokens/search`): fuzzy token search by keyword.
-- `scanTokens` (`GET /apiv2/tokens/scan`): incremental token scanning.
 
 ### Protocols
 
@@ -82,7 +78,6 @@ Primary use cases:
 - `getTopApyPoolList` (`GET /apiv2/pools/top_apy_list`): paginated top APY pools.
 - `searchPools` (`GET /apiv2/pools/search`): pool search endpoint.
 - `searchCountPools` (`GET /apiv2/pools/search/count`): pool search count endpoint.
-- `scanPools` (`GET /apiv2/pools/scan`): incremental pool scanning.
 - `getPoolHooks` (`GET /apiv2/pools/hooks`): pool hooks list.
 - `getPoolVolHistory` (`GET /apiv2/pools/history/vol`): pool volume history.
 - `getPoolLiqHistory` (`GET /apiv2/pools/history/liq`): pool liquidity history.
