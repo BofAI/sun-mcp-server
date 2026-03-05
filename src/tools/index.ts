@@ -1,0 +1,1 @@
+export { registerFunctionTools } from './registerExamples';

@@ -1,0 +1,21 @@
+
+{
+  "transport": "streamable-http",
+  "host": "127.0.0.1",
+  "port": 8080,
+  "mcpPath": "/mcp",
+  "headers": { "User-Agent": "OpenAPI-MCP-Client/1.0" },
+  "specs": [
+    {
+      "name": "sunio-open-api",
+      "spec": "./specs/sunio-open-api.json",
+      "targetUrl": "https://open.sun.io",
+      "overlays": "",
+      "timeout": 10000,
+      "whitelist": "*",
+      "headers": { },
+      "toolPrefix": "",
+      "disableXMcp": false
+    }
+  ]
+}
