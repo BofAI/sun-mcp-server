@@ -84,8 +84,8 @@ Primary use cases:
 - `searchCountPools` (`GET /apiv2/pools/search/count`): pool search count endpoint.
 - `scanPools` (`GET /apiv2/pools/scan`): incremental pool scanning.
 - `getPoolHooks` (`GET /apiv2/pools/hooks`): pool hooks list.
-- `getVolHistory_2` (`GET /apiv2/pools/history/vol`): pool volume history.
-- `getLiqHistory_1` (`GET /apiv2/pools/history/liq`): pool liquidity history.
+- `getPoolVolHistory` (`GET /apiv2/pools/history/vol`): pool volume history.
+- `getPoolLiqHistory` (`GET /apiv2/pools/history/liq`): pool liquidity history.
 
 ### Pairs
 
