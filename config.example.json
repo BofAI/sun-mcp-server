@@ -1,0 +1,46 @@
+{
+  "// This is an example configuration file for OpenAPI to MCP Generator": "// Comments like this are for documentation only and should be removed in actual config",
+  
+  "// OpenAPI Specification Settings": "",
+  "// spec can be a local file path or HTTP/HTTPS URL": "",
+  "spec": "./path/to/openapi-spec.json",
+  "// overlays can be comma-separated local file paths or HTTP/HTTPS URLs": "",
+  "overlays": "./path/to/overlay1.json,./path/to/overlay2.json",
+  "// Example with HTTP URLs": "",
+  "// spec": "https://example.com/api/openapi.json",
+  "// overlays": "https://example.com/api/overlay.json,./local/overlay.json",
+  "// Multi-spec mode example (preferred when specs need different settings)": "",
+  "// specs example 1": "[",
+  "// specs example 2": "  { \"name\": \"api-a\", \"spec\": \"https://api-a.example.com/openapi.json\", \"targetUrl\": \"https://api-a.example.com\", \"overlays\": \"./specs/a-overlay.json\", \"timeout\": 15000, \"whitelist\": \"getA*\", \"headers\": { \"X-Api-Env\": \"a\" }, \"toolPrefix\": \"a_\" },",
+  "// specs example 3": "  { \"name\": \"api-b\", \"spec\": \"https://api-b.example.com/openapi.json\", \"targetUrl\": \"https://api-b.example.com\", \"timeout\": 45000, \"blacklist\": \"deleteB*\", \"headers\": { \"X-Api-Env\": \"b\" }, \"toolPrefix\": \"b_\" }",
+  "// specs example 4": "]",
+  
+  "// MCP Server Settings": "",
+  "transport": "stdio",
+  "host": "127.0.0.1",
+  "port": 8080,
+  "mcpPath": "/mcp",
+  "targetUrl": "https://api.example.com",
+  "timeout": 30000,
+  
+  "// API Filtering": "",
+  "whitelist": "getPrice,getPools,GET:/apiv2/*",
+  "blacklist": "scanContracts,GET:/apiv2/contracts/*",
+  
+  "// Authentication & Security": "",
+  "apiKey": "your-api-key",
+  "securitySchemeName": "ApiKeyAuth",
+  "securityCredentials": {
+    "ApiKeyAuth": "your-api-key",
+    "OAuth2": "your-oauth-token"
+  },
+  
+  "// Custom Headers": "",
+  "headers": {
+    "X-Custom-Header": "custom-value",
+    "User-Agent": "OpenAPI-MCP-Client/1.0"
+  },
+  
+  "// Other Settings": "",
+  "disableXMcp": false
+}

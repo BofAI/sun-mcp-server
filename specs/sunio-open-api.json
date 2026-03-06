@@ -1,0 +1,3315 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SUN.IO API v2",
+    "description": "SUN.IO API v2 for querying TRON DEX ecosystem data, including protocols, pools, tokens, transactions, farming, and user positions. This specification is enriched for MCP/AI tool use with clearer operation intent, parameter constraints, and practical examples. In user-facing context, SUN.IO and SUNSWAP refer to the same platform.",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://open.sun.io"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Protocols",
+      "description": "APIs for querying protocol information (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Positions",
+      "description": "APIs for querying user liquidity positions across different protocols (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Transactions",
+      "description": "APIs for querying pool transactions (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Farms",
+      "description": "APIs for retrieving farming pool information and user staking positions (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Pairs",
+      "description": "APIs for fetching token pair information from pools (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Tokens",
+      "description": "APIs for querying token information (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Pools",
+      "description": "APIs for querying pool information (Applies to SUN.IO, also known as SUNSWAP.)"
+    }
+  ],
+  "paths": {
+    "/apiv2/transactions/scan": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Scan transactions",
+        "operationId": "scanTransactions",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol to filter: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "tokenAddress",
+            "in": "query",
+            "description": "Token address to filter, can not be used with poolAddress",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+            }
+          },
+          {
+            "name": "poolAddress",
+            "in": "query",
+            "description": "Comma-separated pool address to filter, can not be used with tokenAddress",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Transaction type to filter: add, withdraw, swap",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "add",
+                "withdraw",
+                "swap"
+              ]
+            }
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "Start time (format: yyyy-MM-dd HH:mm:ss or yyyy-MM-dd)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:[ ]\\d{2}:\\d{2}:\\d{2})?$",
+              "example": "2025-01-01 00:00:00"
+            }
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "description": "End time (format: yyyy-MM-dd HH:mm:ss or yyyy-MM-dd)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:[ ]\\d{2}:\\d{2}:\\d{2})?$",
+              "example": "2025-01-31 23:59:59"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset from previous response",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "20260304110400_000001679643871_000003"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Use this endpoint to stream/snapshot recent swap, add-liquidity, and withdraw-liquidity transactions. Best for timeline analysis, activity feeds, and incremental sync with offset pagination."
+      }
+    },
+    "/apiv2/tokens": {
+      "get": {
+        "tags": [
+          "Tokens"
+        ],
+        "summary": "Fetches a list of tokens based on token address or protocol.",
+        "operationId": "getTokens",
+        "parameters": [
+          {
+            "name": "tokenAddress",
+            "in": "query",
+            "description": "Comma-separated token addresses",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: reserveUsd, volumeUsd1d",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "reserveUsd",
+              "enum": [
+                "reserveUsd",
+                "volumeUsd1d"
+              ]
+            }
+          },
+          {
+            "name": "filterBlackList",
+            "in": "query",
+            "description": "Whether to filter out results that are in the blacklist. Set to true to exclude blacklisted tokens.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get token metadata and key metrics by token address or protocol. Use this for token detail pages, token lists, and protocol-scoped token discovery."
+      }
+    },
+    "/apiv2/tokens/search": {
+      "get": {
+        "tags": [
+          "Tokens"
+        ],
+        "summary": "Searches tokens by a query string and protocol.",
+        "operationId": "searchTokens",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "SUN"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ALL",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: reserveUsd, volumeUsd1d",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "reserveUsd",
+              "enum": [
+                "reserveUsd",
+                "volumeUsd1d"
+              ]
+            }
+          },
+          {
+            "name": "filterBlackList",
+            "in": "query",
+            "description": "Whether to filter out results that are in the blacklist. Set to true to exclude blacklisted tokens.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Search tokens by keyword (symbol/address) with optional protocol and sorting. Use when users provide fuzzy token input."
+      }
+    },
+    "/apiv2/protocols": {
+      "get": {
+        "tags": [
+          "Protocols"
+        ],
+        "summary": "Fetch protocol details",
+        "operationId": "getProtocol",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Protocol response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch current protocol-level overview metrics (TVL/liquidity, volume, etc.) for one protocol or all protocols."
+      }
+    },
+    "/apiv2/protocols/history/vol": {
+      "get": {
+        "tags": [
+          "Protocols"
+        ],
+        "summary": "Fetch historical protocol volume data",
+        "operationId": "getVolHistory",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ALL",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch daily protocol volume history between startDate and endDate for trend charts and historical analytics."
+      }
+    },
+    "/apiv2/protocols/history/usersCount": {
+      "get": {
+        "tags": [
+          "Protocols"
+        ],
+        "summary": "Fetch historical protocol users count data",
+        "operationId": "getUsersCountHistory",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ALL",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch daily active/participating user count history at protocol level."
+      }
+    },
+    "/apiv2/protocols/history/transactions": {
+      "get": {
+        "tags": [
+          "Protocols"
+        ],
+        "summary": "Fetch historical protocol transactions data",
+        "operationId": "getTransactionsHistory",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ALL",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch daily transaction count history at protocol level."
+      }
+    },
+    "/apiv2/protocols/history/poolsCount": {
+      "get": {
+        "tags": [
+          "Protocols"
+        ],
+        "summary": "Fetch historical protocol pools count data",
+        "operationId": "getPoolsCountHistory",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ALL",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch daily pool count history at protocol level."
+      }
+    },
+    "/apiv2/protocols/history/liq": {
+      "get": {
+        "tags": [
+          "Protocols"
+        ],
+        "summary": "Fetch historical protocol liquidity data",
+        "operationId": "getLiqHistory",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ALL",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch daily protocol liquidity history between startDate and endDate."
+      }
+    },
+    "/apiv2/price": {
+      "get": {
+        "tags": [
+          "Price"
+        ],
+        "summary": "Get token price",
+        "operationId": "getPrice",
+        "parameters": [
+          {
+            "name": "tokenAddress",
+            "in": "query",
+            "description": "Token address list, separated by comma",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "query",
+            "description": "Token symbol or address list, separated by comma",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "SUN,TRX,USDT"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Price response",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get latest token prices by token address or symbol. Supports batch lookup with comma-separated input."
+      }
+    },
+    "/apiv2/positions/user": {
+      "get": {
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Fetch user positions",
+        "operationId": "getUserPositions",
+        "parameters": [
+          {
+            "name": "userAddress",
+            "in": "query",
+            "description": "User wallet address",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TGjmQxcRHwPJ3NKfPNs1zRkGWJDmMDQiE6"
+            }
+          },
+          {
+            "name": "poolAddress",
+            "in": "query",
+            "description": "Pool address to filter",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol to filter: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search keyword (fuzzy match)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "SUN"
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: lpBalanceUsd, lastActiveBlockTime",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "lpBalanceUsd",
+              "enum": [
+                "lpBalanceUsd",
+                "lastActiveBlockTime"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User positions response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPositionResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch a user's liquidity positions across pools with optional protocol/pool filters, search, pagination, and sorting."
+      }
+    },
+    "/apiv2/positions/tick": {
+      "get": {
+        "tags": [
+          "Positions"
+        ],
+        "summary": "Fetch pool all user positions tick liquidity",
+        "operationId": "getPoolUserPositionTick",
+        "parameters": [
+          {
+            "name": "poolAddress",
+            "in": "query",
+            "description": "Pool address to filter",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE"
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pool all user positions tick liquidity response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPositionTickResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch all position ticks for a given concentrated-liquidity pool (poolAddress required)."
+      }
+    },
+    "/apiv2/pools": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Fetch pools by pool address, token address, or protocol",
+        "operationId": "getPools",
+        "parameters": [
+          {
+            "name": "poolAddress",
+            "in": "query",
+            "description": "Comma-separated pool address to filter, can not be used with tokenAddress",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE"
+            }
+          },
+          {
+            "name": "tokenAddress",
+            "in": "query",
+            "description": "Token address to filter, can not be used with poolAddress",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol to filter: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: reserveUsd, volumeUsd1d, feeUsd1d, totalApr",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "reserveUsd",
+              "enum": [
+                "reserveUsd",
+                "volumeUsd1d",
+                "feeUsd1d",
+                "totalApr"
+              ]
+            }
+          },
+          {
+            "name": "desc",
+            "in": "query",
+            "description": "Sort order, true for descending, false for ascending",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          },
+          {
+            "name": "filterBlackList",
+            "in": "query",
+            "description": "Whether to filter out results that are in the blacklist. Set to true to exclude blacklisted pools.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pool response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoolsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch pool list/details by pool address, token address, or protocol. Supports sorting and blacklist filtering."
+      }
+    },
+    "/apiv2/pools/top_apy_list": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Retrieves a paginated list of liquidity pools with the highest Annual Percentage Yield (APY)",
+        "operationId": "getTopApyPoolList",
+        "parameters": [
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pool response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoolsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get paginated pools ranked by APY for yield discovery use cases."
+      }
+    },
+    "/apiv2/pools/search": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Search pools by query string",
+        "operationId": "searchPools",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search query (pool address, token address, or token name/symbol)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "SUN"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol to filter: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: reserveUsd, volumeUsd1d, feeUsd1d, totalApr",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "reserveUsd",
+              "enum": [
+                "reserveUsd",
+                "volumeUsd1d",
+                "feeUsd1d",
+                "totalApr"
+              ]
+            }
+          },
+          {
+            "name": "desc",
+            "in": "query",
+            "description": "Sort order, true for descending, false for ascending",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          },
+          {
+            "name": "filterBlackList",
+            "in": "query",
+            "description": "Whether to filter out results that are in the blacklist. Set to true to exclude blacklisted pools.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pool response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoolsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Search pools by address/token/name/symbol with protocol filtering, sorting, and pagination."
+      }
+    },
+    "/apiv2/pools/search/count": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Search pools by query string",
+        "operationId": "searchCountPools",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search query (pool address, token address, or token name/symbol)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "SUN"
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol to filter: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "filterBlackList",
+            "in": "query",
+            "description": "Whether to filter out results that are in the blacklist. Set to true to exclude blacklisted pools.",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pool count response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get only the total count of pools that match search filters. Use before paginated fetch for UI pagination."
+      }
+    },
+    "/apiv2/pools/hooks": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Fetches a list of pool hooks",
+        "operationId": "getPoolHooks",
+        "responses": {
+          "200": {
+            "description": "Pool hooks response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoolHooksResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch V4 pool hook configuration/metadata."
+      }
+    },
+    "/apiv2/pools/history/vol": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Fetch historical pool volume data",
+        "operationId": "getPoolVolHistory",
+        "parameters": [
+          {
+            "name": "poolAddress",
+            "in": "query",
+            "description": "Pool address",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch daily volume history for a specific pool (poolAddress required)."
+      }
+    },
+    "/apiv2/pools/history/liq": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Fetch historical pool liquidity data",
+        "operationId": "getPoolLiqHistory",
+        "parameters": [
+          {
+            "name": "poolAddress",
+            "in": "query",
+            "description": "Pool address",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date inclusive, format: yyyy-MM-dd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "example": "2025-01-31"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch daily liquidity history for a specific pool (poolAddress required)."
+      }
+    },
+    "/apiv2/pairs": {
+      "get": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Fetch token pairs from pair_info table (direct entity query)",
+        "operationId": "getPairs",
+        "parameters": [
+          {
+            "name": "protocols",
+            "in": "query",
+            "description": "Comma-separated protocols to filter: V1, V1_5, V2, CURVE (V3 excluded)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "CURVE"
+              ]
+            }
+          },
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Comma-separated protocols to filter: V1, V1_5, V2, CURVE (V3 excluded)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "CURVE"
+              ]
+            }
+          },
+          {
+            "name": "tokenAddress",
+            "in": "query",
+            "description": "Token address to filter (matches base_id or quote_id)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: price, updateTime, baseAmountVol1d, quoteAmountVol1d",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "price",
+                "updateTime",
+                "baseAmountVol1d",
+                "quoteAmountVol1d"
+              ]
+            }
+          },
+          {
+            "name": "desc",
+            "in": "query",
+            "description": "Sort descending (true) or ascending (false)",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "example": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pair response from pair_info table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Query token pair records directly from pair_info with protocol/address filters, sorting, and pagination."
+      }
+    },
+    "/apiv2/farms": {
+      "get": {
+        "tags": [
+          "Farms"
+        ],
+        "summary": "Get list of farming pools",
+        "operationId": "getFarms",
+        "parameters": [
+          {
+            "name": "farmAddress",
+            "in": "query",
+            "description": "Comma-separated farm address to filter",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TKVx...abc123"
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: totalLockedUsd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "totalLockedUsd",
+              "enum": [
+                "totalLockedUsd"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Farm response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FarmsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get farming pool list and key metrics with optional address filter and sorting."
+      }
+    },
+    "/apiv2/farms/transactions": {
+      "get": {
+        "tags": [
+          "Farms"
+        ],
+        "summary": "Scan farming transactions",
+        "operationId": "getFarmTransactions",
+        "parameters": [
+          {
+            "name": "userAddress",
+            "in": "query",
+            "description": "User wallet address",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TKVx...abc123"
+            }
+          },
+          {
+            "name": "farmAddress",
+            "in": "query",
+            "description": "Farm address to filter",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TKVx...abc123"
+            }
+          },
+          {
+            "name": "farmTxType",
+            "in": "query",
+            "description": "Comma-separated farm transaction types to filter: STAKE, UNSTAKE, LOCK, UNLOCK, CLAIM_REWARD, CLAIM_REWARD_ACC",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "STAKE,UNSTAKE,CLAIM_REWARD"
+            }
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "Start time (format: yyyy-MM-dd HH:mm:ss or yyyy-MM-dd)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:[ T]\\d{2}:\\d{2}:\\d{2})?$",
+              "example": "2025-01-01 00:00:00"
+            }
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "description": "End time (format: yyyy-MM-dd HH:mm:ss or yyyy-MM-dd)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:[ T]\\d{2}:\\d{2}:\\d{2})?$",
+              "example": "2025-01-31 23:59:59"
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: txTime",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "txTime",
+              "enum": [
+                "txTime"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User farm transactions response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FarmTransactionsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Fetch farming transaction history (stake/unstake/lock/unlock/claim) with optional user/farm/time filters."
+      }
+    },
+    "/apiv2/farms/positions/user": {
+      "get": {
+        "tags": [
+          "Farms"
+        ],
+        "summary": "Get user's farming positions",
+        "operationId": "getFarmPositions",
+        "parameters": [
+          {
+            "name": "userAddress",
+            "in": "query",
+            "description": "User wallet address",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TKVx...abc123"
+            }
+          },
+          {
+            "name": "farmAddress",
+            "in": "query",
+            "description": "Comma-separated farm address to filter",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "TKVx...abc123"
+            }
+          },
+          {
+            "name": "pageNo",
+            "in": "query",
+            "description": "Page number, starting from 1",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "minimum": 1,
+              "example": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort field: positionUsd",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "positionUsd",
+              "enum": [
+                "positionUsd"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User farm positions response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FarmPositionResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get a user's farming positions with optional farm filtering, pagination, and sorting."
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BaseResult": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "description": "Response payload"
+          }
+        },
+        "description": "Base response object"
+      },
+      "TransactionsResp": {
+        "type": "object",
+        "properties": {
+          "txId": {
+            "type": "string",
+            "description": "Transaction hash"
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Protocol of the transaction, e.g., V1, V1_5, V2, V3, CURVE"
+          },
+          "poolAddress": {
+            "type": "string",
+            "description": "Transaction pool address"
+          },
+          "tokenAddressList": {
+            "type": "array",
+            "description": "List of token addresses involved in the transaction",
+            "items": {
+              "type": "string",
+              "description": "List of token addresses involved in the transaction"
+            }
+          },
+          "tokenAmountList": {
+            "type": "array",
+            "description": "List of token amounts corresponding to tokenAddressList",
+            "items": {
+              "type": "string",
+              "description": "List of token amounts corresponding to tokenAddressList"
+            }
+          },
+          "fromTokenAddress": {
+            "type": "string",
+            "description": "From token address"
+          },
+          "fromTokenAmount": {
+            "type": "number",
+            "description": "Amount of the from token"
+          },
+          "fromTokenPriceUsd": {
+            "type": "number",
+            "description": "From token price in USD"
+          },
+          "swapTime": {
+            "type": "string",
+            "description": "Transaction timestamp"
+          },
+          "toTokenAddress": {
+            "type": "string",
+            "description": "To token address"
+          },
+          "toTokenAmount": {
+            "type": "number",
+            "description": "Amount of the to token"
+          },
+          "toTokenPriceUsd": {
+            "type": "number",
+            "description": "To token price in USD"
+          },
+          "feeUsd": {
+            "type": "number",
+            "description": "Transaction fee in USD"
+          },
+          "feeRate": {
+            "type": "number",
+            "description": "Transaction fee rate decimal"
+          },
+          "userAddress": {
+            "type": "string",
+            "description": "User address who initiated the transaction"
+          },
+          "callContract": {
+            "type": "string",
+            "description": "Contract called by the transaction"
+          },
+          "valueUsd": {
+            "type": "number",
+            "description": "Value of the transaction in USD"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of swap or transaction"
+          },
+          "offset": {
+            "type": "string",
+            "description": "Pagination offset, used to fetch transactions next page"
+          },
+          "tokenNameList": {
+            "type": "array",
+            "description": "Token names in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token names in the pool"
+            }
+          },
+          "tokenSymbolList": {
+            "type": "array",
+            "description": "Token symbols in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token symbols in the pool"
+            }
+          },
+          "tokenDecimalList": {
+            "type": "array",
+            "description": "Token decimals in the pool",
+            "items": {
+              "type": "integer",
+              "description": "Token decimals in the pool",
+              "format": "int32"
+            }
+          },
+          "tokenLogoList": {
+            "type": "array",
+            "description": "Token logo URLs in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token logo URLs in the pool"
+            }
+          },
+          "tokenPriceUsdList": {
+            "type": "array",
+            "description": "Token usd price in the pool",
+            "items": {
+              "type": "number",
+              "description": "Token usd price in the pool"
+            }
+          },
+          "extraInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "description": "Extra info, e.g., v4 fee info"
+            },
+            "description": "Extra info, e.g., v4 fee info"
+          }
+        },
+        "description": "Transaction response object"
+      },
+      "TokensResp": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string",
+            "description": "Protocol name"
+          },
+          "tokenAddress": {
+            "type": "string",
+            "description": "Token contract address"
+          },
+          "tokenName": {
+            "type": "string",
+            "description": "Token name"
+          },
+          "tokenSymbol": {
+            "type": "string",
+            "description": "Token symbol"
+          },
+          "tokenLogo": {
+            "type": "string",
+            "description": "Token logo URL"
+          },
+          "tokenDecimal": {
+            "type": "integer",
+            "description": "Token decimals",
+            "format": "int32"
+          },
+          "tokenPriceUsd": {
+            "type": "number",
+            "description": "Token price in USD"
+          },
+          "tokenPriceUsd1dRate": {
+            "type": "number",
+            "description": "24h token price change rate decimal"
+          },
+          "reserveUsd": {
+            "type": "number",
+            "description": "Total liquidity of this token in USD"
+          },
+          "reserveUsd1dRate": {
+            "type": "number",
+            "description": "24h liquidity change rate decimal"
+          },
+          "volumeUsd1d": {
+            "type": "number",
+            "description": "24h trading volume in USD"
+          },
+          "volumeUsd1dRate": {
+            "type": "number",
+            "description": "24h trading volume change rate decimal"
+          },
+          "volumeUsd7d": {
+            "type": "number",
+            "description": "7d trading volume in USD"
+          },
+          "volumeUsd7dRate": {
+            "type": "number",
+            "description": "7d trading volume change rate decimal"
+          },
+          "volumeUsd14d": {
+            "type": "number",
+            "description": "14d trading volume in USD"
+          },
+          "transaction1d": {
+            "type": "integer",
+            "description": "Number of transactions in the last 24h involving this token",
+            "format": "int32"
+          },
+          "transaction1dRate": {
+            "type": "number",
+            "description": "24h transaction count change rate decimal"
+          },
+          "relevantPoolAddressList": {
+            "type": "array",
+            "description": "Pool addresses related to the tokens within this pool",
+            "items": {
+              "type": "string",
+              "description": "Pool addresses related to the tokens within this pool"
+            }
+          },
+          "id": {
+            "type": "integer",
+            "description": "Token ID (internal DB primary key)",
+            "format": "int64"
+          }
+        },
+        "description": "Token response object"
+      },
+      "ProtocolResp": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string",
+            "description": "Protocol name"
+          },
+          "reserveUsd": {
+            "type": "number",
+            "description": "Total liquidity in USD"
+          },
+          "reserveUsd1dRate": {
+            "type": "number",
+            "description": "24h liquidity change rate decimal"
+          },
+          "volumeUsd1d": {
+            "type": "number",
+            "description": "24h trading volume in USD"
+          },
+          "volumeUsd1dRate": {
+            "type": "number",
+            "description": "24h volume change rate decimal"
+          },
+          "volumeUsd7d": {
+            "type": "number",
+            "description": "7d trading volume in USD"
+          },
+          "volumeUsd7dRate": {
+            "type": "number",
+            "description": "7d volume change rate decimal"
+          },
+          "volumeUsd14d": {
+            "type": "number",
+            "description": "14d trading volume in USD"
+          },
+          "transaction1d": {
+            "type": "integer",
+            "description": "Number of transactions in the last 24h",
+            "format": "int32"
+          },
+          "transaction1dRate": {
+            "type": "number",
+            "description": "24h transaction count change rate decimal"
+          },
+          "transaction7d": {
+            "type": "integer",
+            "description": "Number of transactions in the last 7 days",
+            "format": "int32"
+          },
+          "transaction7dRate": {
+            "type": "number",
+            "description": "7 days transaction count change rate decimal"
+          },
+          "feeUsd1d": {
+            "type": "number",
+            "description": "24h fee revenue in USD"
+          },
+          "feeUsd1dRate": {
+            "type": "number",
+            "description": "24h fee revenue change rate decimal"
+          },
+          "tranUser1d": {
+            "type": "integer",
+            "description": "Number of unique trading users in the last 24h",
+            "format": "int32"
+          },
+          "tranUser7d": {
+            "type": "integer",
+            "description": "Number of unique trading users in the last 7d",
+            "format": "int32"
+          },
+          "poolTotal": {
+            "type": "integer",
+            "description": "Total number of pools in the protocol",
+            "format": "int32"
+          },
+          "poolNew1d": {
+            "type": "integer",
+            "description": "Number of new pools created in the last 24h",
+            "format": "int32"
+          },
+          "trxPrice": {
+            "type": "number",
+            "description": "TRX token price in USD"
+          },
+          "trxPrice1dRate": {
+            "type": "number",
+            "description": "24h TRX price change rate decimal"
+          }
+        },
+        "description": "Protocol aggregated statistics response object"
+      },
+      "HistoryResp": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "integer",
+            "description": "Unix timestamp (milliseconds) representing the point in time of the record",
+            "format": "int64"
+          },
+          "value": {
+            "type": "number",
+            "description": "Recorded value at the given timestamp"
+          }
+        },
+        "description": "Historical data point representing a value at a specific timestamp"
+      },
+      "UserPositionResp": {
+        "type": "object",
+        "properties": {
+          "positionType": {
+            "type": "string",
+            "description": "Type of position"
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Protocol of the position, e.g., 'V1', 'V2', 'V3', 'CURVE'"
+          },
+          "poolAddress": {
+            "type": "string",
+            "description": "Address of the liquidity pool contract"
+          },
+          "userAddress": {
+            "type": "string",
+            "description": "Address of the user who owns this position"
+          },
+          "poolFeeRate": {
+            "type": "number",
+            "description": "Pool fee rate (e.g., 0.003 for 0.3%)"
+          },
+          "tokenAddressList": {
+            "type": "array",
+            "description": "List of token addresses in the pool",
+            "items": {
+              "type": "string",
+              "description": "List of token addresses in the pool"
+            }
+          },
+          "userTokenAmountList": {
+            "type": "array",
+            "description": "List of token amounts corresponding to the user’s share in the pool (as string for precision)",
+            "items": {
+              "type": "string",
+              "description": "List of token amounts corresponding to the user’s share in the pool (as string for precision)"
+            }
+          },
+          "lpBalanceUsd": {
+            "type": "number",
+            "description": "USD value of the user’s LP balance"
+          },
+          "lpBalanceAmount": {
+            "type": "number",
+            "description": "Amount of LP tokens the user holds"
+          },
+          "lpPriceUsd": {
+            "type": "number",
+            "description": "Price of each LP token in USD"
+          },
+          "nftTokenId": {
+            "type": "string",
+            "description": "NFT token ID (for Uniswap V3 positions)"
+          },
+          "extraInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "description": "Extra info, e.g., v3 tick info"
+            },
+            "description": "Extra info, e.g., v3 tick info"
+          },
+          "poolShare": {
+            "type": "number",
+            "description": "User’s pool share, expressed as a decimal of the total liquidity"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the position, e.g., 'IN_RANGE', 'OUT_RANGE'"
+          },
+          "lpTokenSymbol": {
+            "type": "string",
+            "description": "Symbol of the LP token"
+          },
+          "lpTokenName": {
+            "type": "string",
+            "description": "Full name of the LP token"
+          },
+          "lastActiveBlockTime": {
+            "type": "string",
+            "description": "Last active block time",
+            "format": "date-time"
+          },
+          "tokenNameList": {
+            "type": "array",
+            "description": "Token names in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token names in the pool"
+            }
+          },
+          "tokenSymbolList": {
+            "type": "array",
+            "description": "Token symbols in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token symbols in the pool"
+            }
+          },
+          "tokenDecimalList": {
+            "type": "array",
+            "description": "Token decimals in the pool",
+            "items": {
+              "type": "integer",
+              "description": "Token decimals in the pool",
+              "format": "int32"
+            }
+          },
+          "tokenLogoList": {
+            "type": "array",
+            "description": "Token logo URLs in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token logo URLs in the pool"
+            }
+          },
+          "tokenPriceUsdList": {
+            "type": "array",
+            "description": "Token usd price in the pool",
+            "items": {
+              "type": "number",
+              "description": "Token usd price in the pool"
+            }
+          }
+        },
+        "description": "User position response, representing liquidity positions across different protocols"
+      },
+      "UserPositionTickResp": {
+        "type": "object",
+        "properties": {
+          "poolAddress": {
+            "type": "string",
+            "description": "The address of the liquidity pool associated with this position."
+          },
+          "liquidityNet": {
+            "type": "number",
+            "description": "The net liquidity at the given tick."
+          },
+          "price0": {
+            "type": "string",
+            "description": "The price of token0 at this tick, expressed as token1 per token0."
+          },
+          "price1": {
+            "type": "string",
+            "description": "The price of token1 at this tick, expressed as token0 per token1."
+          },
+          "tick": {
+            "type": "number",
+            "description": "The tick index representing the discrete price step in the pool's price range."
+          }
+        },
+        "description": "Response object representing a user's liquidity position tick information within a specific pool."
+      },
+      "PoolsResp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Pool ID (internal DB primary key)",
+            "format": "int64"
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Protocol name"
+          },
+          "poolAddress": {
+            "type": "string",
+            "description": "Pool contract address"
+          },
+          "poolType": {
+            "type": "string",
+            "description": "Pool type"
+          },
+          "contractIndex": {
+            "type": "integer",
+            "description": "Contract index",
+            "format": "int32"
+          },
+          "createBlockTimestamp": {
+            "type": "integer",
+            "description": "Creation block timestamp (ms, UTC)",
+            "format": "int64"
+          },
+          "createTxHash": {
+            "type": "string",
+            "description": "Transaction hash of pool creation"
+          },
+          "feeRate": {
+            "type": "number",
+            "description": "Fee rate (e.g. 0.003 means 0.3%)"
+          },
+          "tokenAddressList": {
+            "type": "array",
+            "description": "Token contract addresses in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token contract addresses in the pool"
+            }
+          },
+          "tokenAmountList": {
+            "type": "array",
+            "description": "Current token amounts in the pool",
+            "items": {
+              "type": "string",
+              "description": "Current token amounts in the pool"
+            }
+          },
+          "tokenAmountVol1dList": {
+            "type": "array",
+            "description": "24h token trading amounts",
+            "items": {
+              "type": "string",
+              "description": "24h token trading amounts"
+            }
+          },
+          "reserveUsd": {
+            "type": "number",
+            "description": "Pool liquidity in USD"
+          },
+          "reserveUsd1dRate": {
+            "type": "number",
+            "description": "24h liquidity change rate decimal"
+          },
+          "volumeUsd1d": {
+            "type": "number",
+            "description": "24h trading volume in USD"
+          },
+          "volumeUsd1dRate": {
+            "type": "number",
+            "description": "24h volume change rate decimal"
+          },
+          "volumeUsd7d": {
+            "type": "number",
+            "description": "7d trading volume in USD"
+          },
+          "volumeUsd7dRate": {
+            "type": "number",
+            "description": "7d volume change rate decimal"
+          },
+          "volumeUsd14d": {
+            "type": "number",
+            "description": "14d trading volume in USD"
+          },
+          "transaction1d": {
+            "type": "integer",
+            "description": "Number of transactions in the last 24h",
+            "format": "int32"
+          },
+          "transaction1dRate": {
+            "type": "number",
+            "description": "24h transaction count change rate decimal"
+          },
+          "feeUsd1d": {
+            "type": "number",
+            "description": "24h fee revenue in USD"
+          },
+          "lpPriceUsd": {
+            "type": "number",
+            "description": "Current LP token price in USD, not used in V3"
+          },
+          "farmApr": {
+            "type": "number",
+            "description": "Annualized yield from farming rewards, expressed as a decimal (e.g., 0.05 for 5%)"
+          },
+          "feeApr": {
+            "type": "number",
+            "description": "Annualized yield from trading fees, expressed as a decimal (e.g., 0.05 for 5%)"
+          },
+          "totalApr": {
+            "type": "number",
+            "description": "Total annualized yield combining farming and fees, expressed as a decimal (e.g., 0.05 for 5%)"
+          },
+          "tokenNameList": {
+            "type": "array",
+            "description": "Token names in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token names in the pool"
+            }
+          },
+          "tokenSymbolList": {
+            "type": "array",
+            "description": "Token symbols in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token symbols in the pool"
+            }
+          },
+          "tokenDecimalList": {
+            "type": "array",
+            "description": "Token decimals in the pool",
+            "items": {
+              "type": "integer",
+              "description": "Token decimals in the pool",
+              "format": "int32"
+            }
+          },
+          "tokenLogoList": {
+            "type": "array",
+            "description": "Token logo URLs in the pool",
+            "items": {
+              "type": "string",
+              "description": "Token logo URLs in the pool"
+            }
+          },
+          "tokenPriceUsdList": {
+            "type": "array",
+            "description": "Token usd price in the pool",
+            "items": {
+              "type": "number",
+              "description": "Token usd price in the pool"
+            }
+          },
+          "swapRateList": {
+            "type": "array",
+            "description": "Exchange rates of each token relative to the last token, which serves as the quote currency",
+            "items": {
+              "type": "string",
+              "description": "Exchange rates of each token relative to the last token, which serves as the quote currency"
+            }
+          },
+          "extraInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "description": "Extra info, e.g., v4 hooks info"
+            },
+            "description": "Extra info, e.g., v4 hooks info"
+          }
+        },
+        "description": "Pool response object"
+      },
+      "PoolHooksResp": {
+        "type": "object",
+        "properties": {
+          "hooksAddress": {
+            "type": "string",
+            "description": "The on-chain address of the hooks contract associated with the pool."
+          },
+          "hooksName": {
+            "type": "string",
+            "description": "The descriptive name of the hooks contract."
+          },
+          "hooksDocUrlEn": {
+            "type": "string",
+            "description": "English documentation URL of the hooks contract"
+          },
+          "hooksDocUrlCh": {
+            "type": "string",
+            "description": "Chinese documentation URL of the hooks contract"
+          }
+        },
+        "description": "Response object containing information about pool hooks."
+      },
+      "PairsResp": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "string",
+            "description": "Protocol name"
+          },
+          "baseId": {
+            "type": "string",
+            "description": "Base token contract address"
+          },
+          "baseName": {
+            "type": "string",
+            "description": "Base token name"
+          },
+          "baseSymbol": {
+            "type": "string",
+            "description": "Base token symbol"
+          },
+          "baseDecimal": {
+            "type": "integer",
+            "description": "Base token decimal precision",
+            "format": "int32"
+          },
+          "baseAmountVol1d": {
+            "type": "string",
+            "description": "24h trading volume of base token (in token units)"
+          },
+          "quoteId": {
+            "type": "string",
+            "description": "Quote token contract address"
+          },
+          "quoteName": {
+            "type": "string",
+            "description": "Quote token name"
+          },
+          "quoteSymbol": {
+            "type": "string",
+            "description": "Quote token symbol"
+          },
+          "quoteDecimal": {
+            "type": "integer",
+            "description": "Quote token decimal precision",
+            "format": "int32"
+          },
+          "quoteAmountVol1d": {
+            "type": "string",
+            "description": "24h trading volume of quote token (in token units)"
+          },
+          "price": {
+            "type": "string",
+            "description": "Current price of base token denominated in quote token"
+          }
+        },
+        "description": "Trading pair response object"
+      },
+      "FarmsResp": {
+        "type": "object",
+        "properties": {
+          "farmAddress": {
+            "type": "string",
+            "description": "Address of the farm contract"
+          },
+          "poolId": {
+            "type": "string",
+            "description": "Pool id of the farm if exists"
+          },
+          "farmName": {
+            "type": "string",
+            "description": "Name of the farm or staking pool"
+          },
+          "farmType": {
+            "type": "string",
+            "description": "Type of the farm, e.g., 'GENESIS', 'GOVERNANCE', 'SUN_BOOST', 'SUN_STAKE', 'SUN_LOCK', 'VESUN_HOLD'"
+          },
+          "farmPhase": {
+            "type": "string",
+            "description": "Current phase or stage of the farm, e.g., 'PHASE1', 'PHASE2'"
+          },
+          "stakeType": {
+            "type": "string",
+            "description": "Type of staking supported by the farm, e.g., 'FLEXIBLE', 'FIXED', 'BOTH'"
+          },
+          "contractVersion": {
+            "type": "string",
+            "description": "Contract version of the farm, e.g., 'V1', 'V2', 'V3'"
+          },
+          "stakeTokenFlag": {
+            "type": "string",
+            "description": "Flag of the stake token, e.g., 'LP_TOKEN', 'TRC20', 'VESUN'"
+          },
+          "stakeTokenAddress": {
+            "type": "string",
+            "description": "Address of the token to be staked in this farm"
+          },
+          "stakeTokenSymbol": {
+            "type": "string",
+            "description": "Symbol of the staking token"
+          },
+          "stakeTokenDecimal": {
+            "type": "integer",
+            "description": "Decimal precision of the staking token",
+            "format": "int32"
+          },
+          "rewardTokenAddress": {
+            "type": "string",
+            "description": "Address of the reward token distributed by the farm"
+          },
+          "rewardTokenSymbol": {
+            "type": "string",
+            "description": "Symbol of the reward token"
+          },
+          "subpoolAddress": {
+            "type": "string",
+            "description": "Address of a specific subpool contract (if applicable)"
+          },
+          "subpoolRewardTokenAddress": {
+            "type": "string",
+            "description": "Address of the reward token for the subpool (if applicable)"
+          },
+          "subpoolRewardTokenSymbol": {
+            "type": "string",
+            "description": "Symbol of the subpool reward token (if applicable)"
+          },
+          "totalLocked": {
+            "type": "number",
+            "description": "Total amount of tokens currently locked in the farm"
+          },
+          "totalLockedUsd": {
+            "type": "number",
+            "description": "USD value of the total locked amount in the farm"
+          },
+          "apy": {
+            "type": "number",
+            "description": "Annual percentage yield (APY) of the farm, based on reward emissions and total value locked"
+          },
+          "subpoolApy": {
+            "type": "number",
+            "description": "APY of the subpool (if applicable)"
+          },
+          "extraInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "description": "Extra information related to the farm"
+            },
+            "description": "Extra information related to the farm"
+          }
+        },
+        "description": "Farming pool response, representing information about a yield farming pool and its staking details"
+      },
+      "FarmTransactionsResp": {
+        "type": "object",
+        "properties": {
+          "uniqueId": {
+            "type": "string",
+            "description": "Unique identifier of the transaction record"
+          },
+          "txId": {
+            "type": "string",
+            "description": "Transaction hash (on-chain tx ID)"
+          },
+          "txTime": {
+            "type": "string",
+            "description": "Timestamp of the transaction (block time)",
+            "format": "date-time"
+          },
+          "farmTxType": {
+            "type": "string",
+            "description": "Type of farming transaction, e.g., STAKE, UNSTAKE, LOCK, UNLOCK, CLAIM_REWARD, CLAIM_REWARD_ACC"
+          },
+          "farmAddress": {
+            "type": "string",
+            "description": "Address of the farm contract involved in this transaction"
+          },
+          "userAddress": {
+            "type": "string",
+            "description": "Address of the user related to this transaction"
+          },
+          "poolId": {
+            "type": "string",
+            "description": "Pool id of the farm if applicable"
+          },
+          "tokenAddressList": {
+            "type": "array",
+            "description": "List of token addresses involved in the transaction (e.g., stake or reward tokens)",
+            "items": {
+              "type": "string",
+              "description": "List of token addresses involved in the transaction (e.g., stake or reward tokens)"
+            }
+          },
+          "tokenAmountList": {
+            "type": "array",
+            "description": "List of token amounts corresponding to tokenAddressList, represented as string for precision",
+            "items": {
+              "type": "string",
+              "description": "List of token amounts corresponding to tokenAddressList, represented as string for precision"
+            }
+          },
+          "valueUsd": {
+            "type": "number",
+            "description": "Total USD value of the transaction, estimated based on token prices at the time"
+          },
+          "extraInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "description": "Extra information or metadata about this transaction"
+            },
+            "description": "Extra information or metadata about this transaction"
+          }
+        },
+        "description": "Farm transaction response, representing an on-chain transaction related to farming activities such as staking, unstaking, or claiming rewards"
+      },
+      "FarmPositionResp": {
+        "type": "object",
+        "properties": {
+          "userAddress": {
+            "type": "string",
+            "description": "Address of the user who owns this farming position"
+          },
+          "farmAddress": {
+            "type": "string",
+            "description": "Address of the farm contract where the user has staked tokens"
+          },
+          "poolId": {
+            "type": "string",
+            "description": "Pool id of the farm if exists"
+          },
+          "positionBalance": {
+            "type": "number",
+            "description": "Amount of tokens the user has staked in the farm"
+          },
+          "positionUsd": {
+            "type": "number",
+            "description": "USD value of the user’s staked position"
+          },
+          "unlockTime": {
+            "type": "string",
+            "description": "Unlock time of the user’s staked position, if applicable",
+            "format": "date-time"
+          },
+          "rewardBalance": {
+            "type": "number",
+            "description": "Unclaimed reward token amount that the user can harvest from the farm"
+          },
+          "rewardUsd": {
+            "type": "number",
+            "description": "USD value of the unclaimed main reward tokens"
+          },
+          "subpoolRewardBalance": {
+            "type": "number",
+            "description": "Unclaimed subpool reward token amount, if applicable"
+          },
+          "subpoolRewardUsd": {
+            "type": "number",
+            "description": "USD value of the unclaimed subpool reward tokens"
+          },
+          "totalValueUsd": {
+            "type": "number",
+            "description": "Total USD value of the user's staked position and pending rewards"
+          },
+          "extraInfo": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "description": "Extra information about the user’s farming position"
+            },
+            "description": "Extra information about the user’s farming position"
+          },
+          "farmName": {
+            "type": "string",
+            "description": "Name of the farm or staking pool"
+          },
+          "farmType": {
+            "type": "string",
+            "description": "Type of the farm, e.g., 'GENESIS', 'GOVERNANCE', 'SUN_BOOST', 'SUN_STAKE', 'SUN_LOCK', 'VESUN_HOLD'"
+          },
+          "farmPhase": {
+            "type": "string",
+            "description": "Current phase or stage of the farm, e.g., 'PHASE1', 'PHASE2'"
+          },
+          "stakeType": {
+            "type": "string",
+            "description": "Type of staking supported by the farm, e.g., 'FLEXIBLE', 'FIXED', 'BOTH'"
+          },
+          "contractVersion": {
+            "type": "string",
+            "description": "Contract version of the farm, e.g., 'V1', 'V2', 'V3'"
+          },
+          "stakeTokenFlag": {
+            "type": "string",
+            "description": "Flag of the stake token, e.g., 'LP_TOKEN', 'TRC20', 'VESUN'"
+          },
+          "stakeTokenAddress": {
+            "type": "string",
+            "description": "Address of the token to be staked in this farm"
+          },
+          "stakeTokenSymbol": {
+            "type": "string",
+            "description": "Symbol of the staking token"
+          },
+          "stakeTokenDecimal": {
+            "type": "integer",
+            "description": "Decimal precision of the staking token",
+            "format": "int32"
+          },
+          "rewardTokenAddress": {
+            "type": "string",
+            "description": "Address of the reward token distributed by the farm"
+          },
+          "rewardTokenSymbol": {
+            "type": "string",
+            "description": "Symbol of the reward token"
+          },
+          "subpoolAddress": {
+            "type": "string",
+            "description": "Address of a specific subpool contract (if applicable)"
+          },
+          "subpoolRewardTokenAddress": {
+            "type": "string",
+            "description": "Address of the reward token for the subpool (if applicable)"
+          },
+          "subpoolRewardTokenSymbol": {
+            "type": "string",
+            "description": "Symbol of the subpool reward token (if applicable)"
+          }
+        },
+        "description": "User farm position response, representing a user's staked position and pending rewards in a yield farming pool"
+      }
+    },
+    "securitySchemes": {
+      "X-API-KEY": {
+        "type": "apiKey",
+        "description": "Optional API key for authentication",
+        "name": "X-API-KEY",
+        "in": "header"
+      }
+    }
+  }
+}

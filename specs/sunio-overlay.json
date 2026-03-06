@@ -1,0 +1,68 @@
+{
+  "overlay": "1.0.0",
+  "info": {
+    "title": "SUN.IO MCP Optimization Overlay",
+    "description": "Sample overlay for improving MCP tool intent and parameter constraints for selected SUN.IO endpoints.",
+    "version": "1.0.0"
+  },
+  "actions": [
+    {
+      "target": "$.info",
+      "update": {
+        "description": "SUN.IO (also called SUNSWAP) OpenAPI spec with MCP-oriented descriptions and constraints for higher tool-selection accuracy."
+      }
+    },
+    {
+      "target": "$.paths['/apiv2/pools'].get",
+      "update": {
+        "x-mcp": {
+          "name": "sunSwapGetPools",
+          "description": "Use this when user asks for SUNSWAP/SUN.IO pool list, pool ranking, or pool detail lookup by token/pool address."
+        },
+        "summary": "Get SUNSWAP pools with filters",
+        "description": "Fetch SUN.IO (SUNSWAP) pool list/details by pool address, token address, or protocol. Prefer this for pool discovery and ranking use cases."
+      }
+    },
+    {
+      "target": "$.paths['/apiv2/pools'].get.parameters[?(@.name=='protocol')]",
+      "update": {
+        "description": "Protocol filter for SUNSWAP/SUN.IO pools.",
+        "schema": {
+          "type": "string",
+          "enum": ["V1", "V1_5", "V2", "V3", "V4", "CURVE", "ALL"],
+          "default": "ALL",
+          "example": "V3"
+        }
+      }
+    },
+    {
+      "target": "$.paths['/apiv2/price'].get",
+      "update": {
+        "x-mcp": {
+          "name": "sunSwapGetTokenPrice",
+          "description": "Use this when user asks for SUNSWAP/SUN.IO token price or quote by symbol/address."
+        },
+        "summary": "Get SUNSWAP token prices",
+        "description": "Get latest token prices on SUN.IO (SUNSWAP). Supports batch lookup by comma-separated token symbols or addresses."
+      }
+    },
+    {
+      "target": "$.paths['/apiv2/farms/transactions'].get.parameters[?(@.name=='farmTxType')]",
+      "update": {
+        "description": "Farming transaction type filter on SUNSWAP/SUN.IO.",
+        "schema": {
+          "type": "string",
+          "enum": ["STAKE", "UNSTAKE", "LOCK", "UNLOCK", "CLAIM_REWARD", "CLAIM_REWARD_ACC"],
+          "example": "STAKE,CLAIM_REWARD"
+        }
+      }
+    },
+    {
+      "target": "$.paths['/apiv2/farms/transactions'].get",
+      "update": {
+        "summary": "Get SUNSWAP farm transaction history",
+        "description": "Fetch SUN.IO (SUNSWAP) farming transaction history including stake/unstake/lock/unlock/claim actions."
+      }
+    }
+  ]
+}
