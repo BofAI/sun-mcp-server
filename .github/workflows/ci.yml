@@ -6,6 +6,7 @@ on:
       - main
       - master
       - develop
+      - readmeupdate
       - "feature/**"
   pull_request:
     branches:
