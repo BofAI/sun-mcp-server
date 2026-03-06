@@ -1,7 +1,7 @@
 {
-  "name": "@tyk-technologies/api-to-mcp",
+  "name": "@BofAI/sun-mcp-server",
   "version": "1.0.0",
-  "description": "Generates MCP tool code from OpenAPI specs",
+  "description": "An MCP server for the SUN.IO (SUNSWAP) ecosystem",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "commonjs",
