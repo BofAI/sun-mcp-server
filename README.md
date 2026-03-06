@@ -93,6 +93,29 @@ Primary use cases:
 - `getFarmTransactions` (`GET /apiv2/farms/transactions`): farm transaction scanning.
 - `getFarmPositions` (`GET /apiv2/farms/positions/user`): user farming positions.
 
+### SUN.IO / SUNSWAP tools
+
+In addition to the OpenAPI-generated tools, this server registers a set of custom SUNSWAP tools under the `sunswap_*` prefix via `src/tools/sunswap.ts`. These include:
+
+- Wallet and balances:
+  - `sunswap_get_wallet_address`
+  - `sunswap_get_balances`
+- Pricing and quoting:
+  - `sunswap_get_token_price`
+  - `sunswap_quote_exact_input`
+- Generic contract helpers:
+  - `sunswap_read_contract` (view/pure calls)
+  - `sunswap_send_contract` (state-changing calls)
+- Swap and liquidity management:
+  - `sunswap_swap_exact_input`
+  - `sunswap_v2_add_liquidity`
+  - `sunswap_v2_remove_liquidity`
+  - `sunswap_v3_mint_position`
+  - `sunswap_v3_increase_liquidity`
+  - `sunswap_v3_decrease_liquidity`
+
+These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running.
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 20+
@@ -142,29 +165,6 @@ Local wallet configuration (used by `src/sunswap/wallet.ts`):
 If neither `TRON_PRIVATE_KEY` nor `TRON_MNEMONIC` is set and no Agent Wallet provider is supplied, write tools will throw an error indicating that no wallet is available.
 
 **Security note**: keep TRON private keys and mnemonics in environment variables or a secure secrets manager. Do not commit them to source control.
-
-### SUN.IO / SUNSWAP tools
-
-In addition to the OpenAPI-generated tools, this server registers a set of custom SUNSWAP tools under the `sunswap_*` prefix via `src/tools/sunswap.ts`. These include:
-
-- Wallet and balances:
-  - `sunswap_get_wallet_address`
-  - `sunswap_get_balances`
-- Pricing and quoting:
-  - `sunswap_get_token_price`
-  - `sunswap_quote_exact_input`
-- Generic contract helpers:
-  - `sunswap_read_contract` (view/pure calls)
-  - `sunswap_send_contract` (state-changing calls)
-- Swap and liquidity management:
-  - `sunswap_swap_exact_input`
-  - `sunswap_v2_add_liquidity`
-  - `sunswap_v2_remove_liquidity`
-  - `sunswap_v3_mint_position`
-  - `sunswap_v3_increase_liquidity`
-  - `sunswap_v3_decrease_liquidity`
-
-These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running.
 
 ## Usage
 
