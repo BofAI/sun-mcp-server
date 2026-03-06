@@ -98,6 +98,40 @@ export async function buildUnsignedContractTx(
 }
 
 /**
+ * Step 2b: Build an unsigned transaction using a raw function selector
+ * and typed parameters — no ABI required.
+ */
+export interface RawContractTxParams {
+  address: string;
+  functionSelector: string;
+  parameter: { type: string; value: unknown }[];
+  callValue?: number;
+  feeLimit?: number;
+}
+
+export async function buildRawContractTx(
+  tronWeb: TronWeb,
+  params: RawContractTxParams,
+): Promise<unknown> {
+  const options: any = {};
+  if (params.callValue != null) {
+    options.callValue = params.callValue;
+  }
+  if (params.feeLimit != null) {
+    options.feeLimit = params.feeLimit;
+  }
+
+  const unsignedTx = await tronWeb.transactionBuilder.triggerSmartContract(
+    params.address,
+    params.functionSelector,
+    options,
+    params.parameter,
+  );
+
+  return unsignedTx;
+}
+
+/**
  * Step 3: Sign and broadcast a previously built unsigned transaction
  * using either a local TronWeb wallet or an AgentWallet provider.
  */

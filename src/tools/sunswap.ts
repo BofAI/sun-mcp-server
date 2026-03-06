@@ -10,6 +10,7 @@ import { getWalletAddress } from "../sunswap/wallet";
 import { getBalances } from "../sunswap/balances";
 import { quoteExactInput, swapExactInput } from "../sunswap/router";
 import { getTokenPrices } from "../sunswap/price";
+import { executeSwap } from "../sunswap/swap";
 import { addLiquidityV2, removeLiquidityV2 } from "../sunswap/liquidityV2";
 import {
   mintPositionV3,
@@ -896,6 +897,79 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
             {
               type: "text",
               text: `Error sending contract transaction: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // Simple swap via Universal Router (tokenIn, tokenOut, amountIn)
+  registerTool(
+    "sunswap_swap",
+    {
+      description:
+        "Execute a token swap on SUN.IO via the Universal Router. Automatically finds the best route, handles Permit2 approval/signing, and broadcasts the transaction. Only requires tokenIn, tokenOut, and amountIn.",
+      inputSchema: {
+        tokenIn: z
+          .string()
+          .describe("Input token contract address (base58). Use TRX address for native TRX."),
+        tokenOut: z
+          .string()
+          .describe("Output token contract address (base58)."),
+        amountIn: z
+          .string()
+          .describe("Amount of input token in raw units (e.g. '1000000' for 1 USDT with 6 decimals)."),
+        network: z
+          .string()
+          .optional()
+          .describe("TRON network: mainnet, nile, or shasta (default: mainnet)"),
+        slippage: z
+          .number()
+          .optional()
+          .describe("Slippage tolerance as a decimal (e.g. 0.005 for 0.5%). Default: 0.005"),
+      },
+      annotations: {
+        title: "SUNSwap Simple Swap",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    async (input: {
+      tokenIn: string;
+      tokenOut: string;
+      amountIn: string;
+      network?: string;
+      slippage?: number;
+    }) => {
+      try {
+        const result = await executeSwap({
+          tokenIn: input.tokenIn,
+          tokenOut: input.tokenOut,
+          amountIn: input.amountIn,
+          network: input.network,
+          slippage: input.slippage,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error executing swap: ${
                 error instanceof Error ? error.message : String(error)
               }`,
             },
