@@ -1,3 +1,33 @@
+// Mock ESM-only dependencies used by SUNSWAP wallet/contracts so that this
+// test can run in Jest's CommonJS environment without loading their code.
+jest.mock("tronweb", () => {
+  return {
+    TronWeb: function TronWebMock() {
+      return {};
+    },
+  };
+}, { virtual: true });
+
+jest.mock("@scure/bip39", () => {
+  return {
+    mnemonicToSeedSync: jest.fn(),
+    generateMnemonic: jest.fn(),
+    validateMnemonic: jest.fn(),
+  };
+}, { virtual: true });
+
+jest.mock("@scure/bip39/wordlists/english.js", () => {
+  return {
+    wordlist: [],
+  };
+}, { virtual: true });
+
+jest.mock("@scure/bip32", () => {
+  return {
+    HDKey: class HDKeyMock {},
+  };
+}, { virtual: true });
+
 import { registerSunswapTools } from "../../src/tools/sunswap";
 
 describe("sunswap tool registration", () => {
