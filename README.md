@@ -113,6 +113,8 @@ In addition to the OpenAPI-generated tools, this server registers a set of custo
   - `sunswap_v3_mint_position`
   - `sunswap_v3_increase_liquidity`
   - `sunswap_v3_decrease_liquidity`
+- Generic Swap Component:
+  - `sunswap_swap`
 
 These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running.
 
