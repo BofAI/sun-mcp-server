@@ -58,4 +58,6 @@ config.local.json
 *.local.ts
 .aider*
 
+jest.config.js
+
 Library

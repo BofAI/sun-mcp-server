@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { RegisterToolFn } from '../types';
-
+import { registerSunswapTools } from './sunswap';
 /**
  * Example entry point for registering custom tools.
  * Keep this file small and split tools into separate files when they grow.
@@ -32,4 +32,6 @@ export function registerFunctionTools(registerTool: RegisterToolFn): void {
             };
         },
     );
+    // SUN.IO / SUNSWAP tools (query + transaction & liquidity management helpers)
+    registerSunswapTools(registerTool);
 }
