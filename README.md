@@ -31,6 +31,7 @@ Primary use cases:
 - Track protocol-level trends (volume, liquidity, users, transaction count, pool count).
 - Inspect user LP/farming positions and farm transaction history.
 - Discover contracts and monitor latest chain block context.
+- Use hand-written SUNSWAP tools (`sunswap_*`) for wallet inspection, quoting swaps, liquidity management, and other on-chain contract interactions.
 
 ## Supported SUN.IO API Domains
 
@@ -124,6 +125,46 @@ Key environment variables:
 - `MCP_WHITELIST_OPERATIONS`, `MCP_BLACKLIST_OPERATIONS`
 - `CUSTOM_HEADERS`, `HEADER_*`
 - `TARGET_API_TIMEOUT_MS`
+
+### TRON wallet configuration for write operations
+
+The SUNSWAP tools support both **read-only** and **state-changing** (write) interactions.  
+Write operations require a TRON wallet to be available to the server, either via local environment variables or an Agent Wallet provider injected by the host.
+
+Local wallet configuration (used by `src/sunswap/wallet.ts`):
+
+- `TRON_PRIVATE_KEY`: Hex private key (with or without `0x` prefix).
+- `TRON_MNEMONIC`: BIP-39 mnemonic phrase (12 or 24 words).
+- `TRON_ACCOUNT_INDEX`: Optional account index for HD wallet derivation (default: `0`).
+- `TRONGRID_API_KEY` / `TRON_GRID_API_KEY`: Optional TronGrid API key used when constructing `TronWeb` instances.
+- `TRON_RPC_URL`: Optional override for the TRON RPC endpoint; when set, it replaces the default `fullNode`, `solidityNode`, and `eventServer` URLs from the built-in network table.
+
+If neither `TRON_PRIVATE_KEY` nor `TRON_MNEMONIC` is set and no Agent Wallet provider is supplied, write tools will throw an error indicating that no wallet is available.
+
+**Security note**: keep TRON private keys and mnemonics in environment variables or a secure secrets manager. Do not commit them to source control.
+
+### SUN.IO / SUNSWAP tools
+
+In addition to the OpenAPI-generated tools, this server registers a set of custom SUNSWAP tools under the `sunswap_*` prefix via `src/tools/sunswap.ts`. These include:
+
+- Wallet and balances:
+  - `sunswap_get_wallet_address`
+  - `sunswap_get_balances`
+- Pricing and quoting:
+  - `sunswap_get_token_price`
+  - `sunswap_quote_exact_input`
+- Generic contract helpers:
+  - `sunswap_read_contract` (view/pure calls)
+  - `sunswap_send_contract` (state-changing calls)
+- Swap and liquidity management:
+  - `sunswap_swap_exact_input`
+  - `sunswap_v2_add_liquidity`
+  - `sunswap_v2_remove_liquidity`
+  - `sunswap_v3_mint_position`
+  - `sunswap_v3_increase_liquidity`
+  - `sunswap_v3_decrease_liquidity`
+
+These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running.
 
 ## Usage
 
