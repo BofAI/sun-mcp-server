@@ -1,1 +1,1 @@
-export { registerFunctionTools } from './registerExamples';
+export { registerSunswapTools } from './sunswap';

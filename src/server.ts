@@ -9,7 +9,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer } from 'http';
 import { z } from 'zod';
-import { registerFunctionTools } from './tools';
+import { registerSunswapTools } from './tools';
 
 async function startServer() {
     console.error('Starting Dynamic OpenAPI MCP Server...');
@@ -82,30 +82,30 @@ async function startServer() {
     };
 
     // Register custom tools from src/tools
-    registerFunctionTools(registerTool);
+    registerSunswapTools(registerTool);
 
     for (const tool of mappedTools) {
         const { mcpToolDefinition, apiCallDetails } = tool;
-        console.error(`Registering MCP tool: ${mcpToolDefinition.name}`);  
-        
+        console.error(`Registering MCP tool: ${mcpToolDefinition.name}`);
+
         try {
             // Convert JSON Schema properties to zod schema
             const params: any = {};
-            
+
             if (mcpToolDefinition.inputSchema && mcpToolDefinition.inputSchema.properties) {
                 // Loop through all properties and create appropriate Zod schemas based on data type
                 for (const [propName, propSchema] of Object.entries(mcpToolDefinition.inputSchema.properties)) {
                     if (typeof propSchema !== 'object') continue;
-                    
+
                     const description = propSchema.description as string || `Parameter: ${propName}`;
                     const required = mcpToolDefinition.inputSchema.required?.includes(propName) || false;
-                    
+
                     // Map JSON Schema types to Zod schema types
                     let zodSchema;
-                    const schemaType = Array.isArray(propSchema.type) 
+                    const schemaType = Array.isArray(propSchema.type)
                         ? propSchema.type[0] // If type is an array (for nullable union types), use first type
                         : propSchema.type;
-                        
+
                     // Handle different types with proper Zod schemas
                     switch (schemaType) {
                         case 'integer':
@@ -130,13 +130,13 @@ async function startServer() {
                             zodSchema = z.string().describe(description);
                             break;
                     }
-                    
+
                     // Make it optional if not required
                     params[propName] = required ? zodSchema : zodSchema.optional();
-                    
+
                 }
             }
-            
+
             // Register the tool using unified registration entry point
             registerTool(
                 mcpToolDefinition.name,
@@ -150,12 +150,12 @@ async function startServer() {
                 async (toolParams: any) => {
                     try {
                         const result = await executeApiCall(apiCallDetails, toolParams);
-                        
+
                         if (result.success) {
                             return {
                                 content: [
                                     {
-                                        type: "text", 
+                                        type: "text",
                                         text: JSON.stringify(result.data)
                                     }
                                 ]
@@ -164,7 +164,7 @@ async function startServer() {
                             // Map API errors to MCP errors
                             let errorCode = ErrorCode.InternalError;
                             let errorMessage = result.error || `API Error ${result.statusCode}`;
-                            
+
                             if (result.statusCode === 400) {
                                 errorCode = ErrorCode.InvalidParams;
                                 errorMessage = `Invalid parameters: ${result.error}`;
@@ -172,16 +172,16 @@ async function startServer() {
                                 errorCode = ErrorCode.InvalidParams;
                                 errorMessage = `Resource not found: ${result.error}`;
                             }
-                            
+
                             throw new McpError(errorCode, errorMessage, result.data);
                         }
                     } catch (invocationError: any) {
                         if (invocationError instanceof McpError) {
                             throw invocationError;
                         }
-                        
+
                         throw new McpError(
-                            ErrorCode.InternalError, 
+                            ErrorCode.InternalError,
                             `Internal server error: ${invocationError.message}`
                         );
                     }
@@ -193,7 +193,7 @@ async function startServer() {
     }
 
     console.error('Starting MCP server...');
-    
+
     try {
         if (config.transport === 'streamable-http') {
             const transport = new StreamableHTTPServerTransport({
