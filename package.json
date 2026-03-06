@@ -70,6 +70,8 @@
     "tronweb": "^6.2.1",
     "yaml": "^2.3.4",
     "yargs": "^17.7.2",
+    "@sun-protocol/universal-router-sdk": "^1.0.1",
+    "@sun-protocol/permit2-sdk": "^1.0.0",
     "zod": "^3.22.4"
   }
 }
