@@ -24,8 +24,16 @@
       "description": "APIs for querying pool transactions (Applies to SUN.IO, also known as SUNSWAP.)"
     },
     {
+      "name": "Contracts",
+      "description": "Endpoints for scanning contracts (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
       "name": "Farms",
       "description": "APIs for retrieving farming pool information and user staking positions (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Chain",
+      "description": "Endpoints for chain information (Applies to SUN.IO, also known as SUNSWAP.)"
     },
     {
       "name": "Pairs",
@@ -34,6 +42,14 @@
     {
       "name": "Tokens",
       "description": "APIs for querying token information (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Old Project",
+      "description": "Endpoints migrated from old project (Applies to SUN.IO, also known as SUNSWAP.)"
+    },
+    {
+      "name": "Sun Token",
+      "description": "Endpoints for SUN token burn information (Applies to SUN.IO, also known as SUNSWAP.)"
     },
     {
       "name": "Pools",
@@ -422,6 +438,130 @@
           }
         },
         "description": "This endpoint is for SUN.IO (also called SUNSWAP). Search tokens by keyword (symbol/address) with optional protocol and sorting. Use when users provide fuzzy token input."
+      }
+    },
+    "/apiv2/tokens/scan": {
+      "get": {
+        "tags": [
+          "Tokens"
+        ],
+        "summary": "Scan all tokens by protocol and ID",
+        "operationId": "scanTokens",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol to filter: V1, V1_5, V2, V3, V4, CURVE, ALL",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "tokenIndex",
+            "in": "query",
+            "description": "Start scanning from this ID (exclusive, records with ID greater than this will be returned)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "example": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Incrementally scan token records by numeric index for ETL and periodic backfill jobs."
+      }
+    },
+    "/apiv2/suntoken/burn_log": {
+      "get": {
+        "tags": [
+          "Sun Token"
+        ],
+        "summary": "Get SUN burn log information",
+        "operationId": "getSunBurnLog",
+        "responses": {
+          "200": {
+            "description": "SUN burn log information",
+            "content": {
+              "application/json": {}
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get SUN token burn statistics/log information for supply and burn-tracking analysis."
       }
     },
     "/apiv2/protocols": {
@@ -1609,6 +1749,91 @@
         "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get only the total count of pools that match search filters. Use before paginated fetch for UI pagination."
       }
     },
+    "/apiv2/pools/scan": {
+      "get": {
+        "tags": [
+          "Pools"
+        ],
+        "summary": "Scan all pools by protocol and contractIndex",
+        "operationId": "scanPools",
+        "parameters": [
+          {
+            "name": "protocol",
+            "in": "query",
+            "description": "Protocol to filter: V1, V1_5, V2, V3, V4, CURVE",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "V1",
+                "V1_5",
+                "V2",
+                "V3",
+                "V4",
+                "CURVE"
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "contractIndex",
+            "in": "query",
+            "description": "Start scanning from this contract index (exclusive, records with contractIndex greater than this will be returned)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "example": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pool response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PoolsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Incrementally scan pools by contractIndex for protocol-level indexing tasks."
+      }
+    },
     "/apiv2/pools/hooks": {
       "get": {
         "tags": [
@@ -1657,7 +1882,7 @@
           "Pools"
         ],
         "summary": "Fetch historical pool volume data",
-        "operationId": "getPoolVolHistory",
+        "operationId": "getVolHistory_2",
         "parameters": [
           {
             "name": "poolAddress",
@@ -1733,7 +1958,7 @@
           "Pools"
         ],
         "summary": "Fetch historical pool liquidity data",
-        "operationId": "getPoolLiqHistory",
+        "operationId": "getLiqHistory_1",
         "parameters": [
           {
             "name": "poolAddress",
@@ -1809,7 +2034,7 @@
           "Pairs"
         ],
         "summary": "Fetch token pairs from pair_info table (direct entity query)",
-        "operationId": "getPairs",
+        "operationId": "getPairsFromEntity",
         "parameters": [
           {
             "name": "protocols",
@@ -2260,6 +2485,116 @@
           }
         },
         "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get a user's farming positions with optional farm filtering, pagination, and sorting."
+      }
+    },
+    "/apiv2/contracts/scan": {
+      "get": {
+        "tags": [
+          "Contracts"
+        ],
+        "summary": "Scan contracts starting from a given ID",
+        "operationId": "scanContracts",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Page size",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "example": 20
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Start scanning from this ID (exclusive, records with ID greater than this will be returned)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "example": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contract response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractsResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Incrementally scan contract records by id for indexing/synchronization."
+      }
+    },
+    "/apiv2/chain/block": {
+      "get": {
+        "tags": [
+          "Chain"
+        ],
+        "summary": "Get latest block information",
+        "operationId": "getLatestBlock",
+        "responses": {
+          "200": {
+            "description": "Latest block information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChainBlockResp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "This endpoint is for SUN.IO (also called SUNSWAP). Get latest chain block information(blockNum, blockTimeStamp) used by SUN.IO backend data indexing."
       }
     }
   },
@@ -3301,6 +3636,52 @@
           }
         },
         "description": "User farm position response, representing a user's staked position and pending rewards in a yield farming pool"
+      },
+      "ContractsResp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Database Unique ID of the contract",
+            "format": "int64"
+          },
+          "contractAddress": {
+            "type": "string",
+            "description": "Blockchain contract address"
+          },
+          "contractName": {
+            "type": "string",
+            "description": "Human-readable name of the contract"
+          },
+          "projectId": {
+            "type": "integer",
+            "description": "Associated project ID",
+            "format": "int32"
+          },
+          "projectIdTag": {
+            "type": "string",
+            "description": "Tag or label for the associated project ID"
+          },
+          "remark": {
+            "type": "string",
+            "description": "Additional remarks or description about the contract"
+          }
+        },
+        "description": "Contract information response object"
+      },
+      "ChainBlockResp": {
+        "type": "object",
+        "properties": {
+          "blockNum": {
+            "type": "string",
+            "description": "Block number"
+          },
+          "blockTimeStamp": {
+            "type": "string",
+            "description": "Block timestamp in milliseconds"
+          }
+        },
+        "description": "Latest block information response object"
       }
     },
     "securitySchemes": {

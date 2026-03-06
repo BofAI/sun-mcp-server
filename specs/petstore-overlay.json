@@ -1,0 +1,35 @@
+{
+  "overlay": "1.0.0",
+  "info": {
+    "title": "Modified Petstore API Overlay",
+    "description": "This is an overlay that modifies the original Petstore API",
+    "version": "1.1.0"
+  },
+  "actions": [
+    {
+      "target": "$.info",
+      "update": {
+        "title": "Modified Petstore API",
+        "version": "1.1.0",
+        "description": "This is an overlay that modifies the original Petstore API"
+      }
+    },
+    {
+      "target": "$.paths['/pets'].get",
+      "update": {
+        "summary": "List all pets with overlay",
+        "description": "This operation has been enhanced with an overlay"
+      }
+    },
+    {
+      "target": "$.paths['/pets/{petId}'].get.parameters[?(@.name=='petId')]",
+      "update": {
+        "description": "Enhanced pet ID description from overlay",
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    }
+  ]
+}

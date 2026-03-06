@@ -7,15 +7,15 @@ import { jest } from '@jest/globals';
 import path from 'path';
 import fs from 'fs/promises';
 
-describe('HTTP Fetching Tests (SUN.IO)', () => {
-  const specUrl = 'https://fixtures.local/sunio-open-api.json';
-  const overlayUrl = 'https://fixtures.local/sunio-overlay.json';
+describe('HTTP Fetching Tests', () => {
+  const specUrl = 'https://fixtures.local/petstore-openapi.json';
+  const overlayUrl = 'https://fixtures.local/petstore-overlay.json';
   let specContent = '';
   let overlayContent = '';
 
   beforeAll(async () => {
-    const specPath = path.resolve(process.cwd(), 'specs/sunio-open-api.json');
-    const overlayPath = path.resolve(process.cwd(), 'specs/sunio-overlay.json');
+    const specPath = path.resolve(process.cwd(), 'test/fixtures/petstore-openapi.json');
+    const overlayPath = path.resolve(process.cwd(), 'test/fixtures/petstore-overlay.json');
     specContent = await fs.readFile(specPath, 'utf8');
     overlayContent = await fs.readFile(overlayPath, 'utf8');
   });
@@ -24,7 +24,7 @@ describe('HTTP Fetching Tests (SUN.IO)', () => {
     jest.resetModules();
   });
 
-  it('fetches SUN.IO OpenAPI spec via HTTP URL', async () => {
+  it('should fetch OpenAPI spec via HTTP URL', async () => {
     jest.doMock('../../src/config', () => ({
       config: {
         specPath: specUrl,
@@ -54,13 +54,15 @@ describe('HTTP Fetching Tests (SUN.IO)', () => {
     const { getProcessedOpenApi } = require('../../src/openapiProcessor');
     const openApiSpec = await getProcessedOpenApi();
 
-    expect(openApiSpec.openapi).toBe('3.0.1');
-    expect(openApiSpec.info.title).toBe('SUN.IO API v2');
-    expect(openApiSpec.paths['/apiv2/price']).toBeDefined();
+    expect(openApiSpec).toBeDefined();
+    expect(openApiSpec.openapi).toBe('3.0.0');
+    expect(openApiSpec.info.title).toBe('Petstore API');
+    expect(openApiSpec.paths['/pets']).toBeDefined();
+    expect(openApiSpec.paths['/pets/{petId}']).toBeDefined();
   });
 
-  it('fetches SUN.IO overlay via HTTP URL', async () => {
-    const localSpecPath = path.resolve(process.cwd(), 'specs/sunio-open-api.json');
+  it('should fetch overlay via HTTP URL', async () => {
+    const localSpecPath = path.resolve(process.cwd(), 'test/fixtures/petstore-openapi.json');
 
     jest.doMock('../../src/config', () => ({
       config: {
@@ -91,12 +93,17 @@ describe('HTTP Fetching Tests (SUN.IO)', () => {
     const { getProcessedOpenApi } = require('../../src/openapiProcessor');
     const openApiSpec = await getProcessedOpenApi();
 
-    expect(openApiSpec.info.description).toContain('MCP-oriented descriptions');
-    expect(openApiSpec.paths['/apiv2/pools'].get.summary).toBe('Get SUNSWAP pools with filters');
-    expect(openApiSpec.paths['/apiv2/price'].get.summary).toBe('Get SUNSWAP token prices');
+    expect(openApiSpec).toBeDefined();
+    expect(openApiSpec.info.title).toBe('Modified Petstore API');
+    expect(openApiSpec.paths['/pets'].get.summary).toBe('List all pets with overlay');
+    const petIdParam = openApiSpec.paths['/pets/{petId}'].get.parameters.find(
+      (p: any) => p.name === 'petId' && p.in === 'path',
+    );
+    expect(petIdParam).toBeDefined();
+    expect(petIdParam.description).toBe('Enhanced pet ID description from overlay');
   });
 
-  it('fetches both spec and overlay via HTTP URLs', async () => {
+  it('should fetch both spec and overlay via HTTP URL', async () => {
     jest.doMock('../../src/config', () => ({
       config: {
         specPath: specUrl,
@@ -127,8 +134,10 @@ describe('HTTP Fetching Tests (SUN.IO)', () => {
     const { getProcessedOpenApi } = require('../../src/openapiProcessor');
     const openApiSpec = await getProcessedOpenApi();
 
-    expect(openApiSpec.openapi).toBe('3.0.1');
-    expect(openApiSpec.paths['/apiv2/price']).toBeDefined();
-    expect(openApiSpec.paths['/apiv2/pools'].get.summary).toBe('Get SUNSWAP pools with filters');
+    expect(openApiSpec).toBeDefined();
+    expect(openApiSpec.openapi).toBe('3.0.0');
+    expect(openApiSpec.info.title).toBe('Modified Petstore API');
+    expect(openApiSpec.paths['/pets']).toBeDefined();
+    expect(openApiSpec.paths['/pets'].get.summary).toBe('List all pets with overlay');
   });
 });

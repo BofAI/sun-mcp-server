@@ -1,40 +1,30 @@
 // Test configuration file
 export const testConfig = {
-  openApiFile: 'specs/sunio-open-api.json',
-  overlayFile: 'specs/sunio-overlay.json',
-  baseUrl: 'https://open.sun.io',
+  openApiFile: 'test/fixtures/petstore-openapi.json',
+  baseUrl: 'http://localhost:3000/api',
   tools: {
-    includeOperationIds: ['getPrice', 'getPools'],
+    // Optional tool configuration/filtering for tests
+    includeOperationIds: ['listPets', 'getPetById', 'createPet'],
     excludeOperationIds: [],
   },
   server: {
-    port: 9000,
+    port: 9000, // Use a different port for testing
     host: 'localhost',
   },
+  // Custom request headers for testing
   headers: {
     'X-Test-Header': 'test-value',
-    'X-API-Version': '2.0.0',
+    'X-API-Version': '1.0.0'
   },
+  // Flag to control X-MCP header for testing
   disableXMcp: false,
+  // Mock responses for API calls during tests
   mockResponses: {
-    getPrice: {
-      code: 0,
-      msg: 'success',
-      data: {
-        SUN: '0.0245',
-        TRX: '0.1342',
-      },
-    },
-    getPools: {
-      code: 0,
-      msg: 'success',
-      data: {
-        list: [
-          { poolAddress: 'TPOOL123', reserveUsd: '123456.78', protocol: 'V3' },
-          { poolAddress: 'TPOOL456', reserveUsd: '65432.10', protocol: 'V2' },
-        ],
-        total: 2,
-      },
-    },
+    listPets: [
+      { id: 1, name: 'Rex', tag: 'dog' },
+      { id: 2, name: 'Whiskers', tag: 'cat' },
+    ],
+    getPetById: { id: 1, name: 'Rex', tag: 'dog' },
+    createPet: { id: 3, name: 'Fluffy', tag: 'rabbit' },
   },
 };

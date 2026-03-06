@@ -13,14 +13,14 @@ async function applySecurity(
     requestConfig: AxiosRequestConfig,
     securityRequirements: OpenAPIV3.SecurityRequirementObject[] | null,
     securitySchemes: Record<string, OpenAPIV3.SecuritySchemeObject> | undefined
-): Promise<boolean> {
+): Promise<void> {
     if (!securityRequirements || securityRequirements.length === 0) {
-        return true;
+        return;
     }
 
     if (!securitySchemes) {
         console.error("Security requirements defined but no security schemes available");
-        return false;
+        return;
     }
 
     // Loop through the security requirements to find one we can satisfy
@@ -136,13 +136,14 @@ async function applySecurity(
         
         if (allSchemesSatisfied) {
             // We found and applied a security requirement that we could satisfy
-            return true;
+            return;
         }
     }
 
     // If we get here, we tried all requirements but couldn't satisfy any
     console.error(`Could not satisfy any security requirements. API call may fail.`);
-    return false;
+    // You might want to throw an error if security is mandatory for your API
+    // throw new Error(`Required security schemes could not be applied.`);
 }
 
 export async function executeApiCall(
@@ -191,7 +192,7 @@ export async function executeApiCall(
     let body: any = undefined;
 
     console.error(`Executing API call for tool: ${details.method} ${details.pathTemplate}`);
-    console.error(`MCP input keys: ${Object.keys(normalizedInput).join(', ') || '(none)'}`);
+    console.error(`MCP Input received:`, normalizedInput);
 
 
     // Map MCP input back to HTTP request components
@@ -216,14 +217,7 @@ export async function executeApiCall(
                     queryParams[paramName] = paramValue;
                     break;
                 case 'header':
-                    // Prevent header injection via CRLF in user-provided header values.
-                    {
-                        const headerValue = String(paramValue);
-                        if (/[\r\n]/.test(headerValue)) {
-                            return { success: false, statusCode: 400, error: `Invalid header value for parameter: ${paramName}` };
-                        }
-                        headers[paramName] = headerValue;
-                    }
+                    headers[paramName] = String(paramValue);
                     break;
                 case 'cookie':
                     // Cookie handling is more complex, often managed by agents or specific header logic
@@ -279,10 +273,7 @@ export async function executeApiCall(
     
     // Apply security before making the call
     try {
-        const securityApplied = await applySecurity(requestConfig, securityRequirements, securitySchemes);
-        if (!securityApplied && securityRequirements && securityRequirements.length > 0) {
-            return { success: false, statusCode: 401, error: 'Required API security credentials are missing or invalid' };
-        }
+        await applySecurity(requestConfig, securityRequirements, securitySchemes);
     } catch (secErr: any) {
         console.error("Security application failed:", secErr);
         return { success: false, statusCode: 401, error: `Security setup failed: ${secErr.message}` };
@@ -319,7 +310,7 @@ export async function executeApiCall(
             };
         } else {
             // Handle 4xx client errors reported by the API
-            console.error(`API returned client error ${response.status}`);
+            console.error(`API returned client error ${response.status}:`, response.data);
             return {
                 success: false,
                 statusCode: response.status,
@@ -329,7 +320,7 @@ export async function executeApiCall(
         }
     } catch (error) {
         const axiosError = error as AxiosError;
-        console.error(`API call failed: ${axiosError.message}`, axiosError.code || 'UNKNOWN');
+        console.error(`API call failed: ${axiosError.message}`, axiosError.response?.data || axiosError.code);
 
         if (axiosError.code === 'ECONNABORTED') {
             const timeoutMs = requestTimeoutMs ?? config.requestTimeoutMs;

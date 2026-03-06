@@ -9,7 +9,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer } from 'http';
 import { z } from 'zod';
-import { registerFunctionTools } from './tools';
+import { registerCustomTools } from './tools';
 
 async function startServer() {
     console.error('Starting Dynamic OpenAPI MCP Server...');
@@ -82,7 +82,7 @@ async function startServer() {
     };
 
     // Register custom tools from src/tools
-    registerFunctionTools(registerTool);
+    registerCustomTools(registerTool);
 
     for (const tool of mappedTools) {
         const { mcpToolDefinition, apiCallDetails } = tool;

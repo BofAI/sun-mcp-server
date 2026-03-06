@@ -3,6 +3,7 @@ node_modules/
 npm-debug.log
 yarn-debug.log
 yarn-error.log
+package-lock.json
 yarn.lock
 
 # Build outputs
@@ -57,5 +58,6 @@ config.local.json
 *.local.js
 *.local.ts
 .aider*
+jest.config.js
 
 Library

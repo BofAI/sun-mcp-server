@@ -240,6 +240,25 @@ export class OverlayApplier {
     return doc;
   }
 
+  /** Remove property or array element from parent */
+  private removeFromParent(parent: any, key: string | number) {
+    if (Array.isArray(parent)) {
+      parent.splice(Number(key), 1);
+    } else if (parent && typeof parent === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete parent[key as keyof typeof parent];
+    }
+  }
+
+  /** Assign helper that works for object or array parents */
+  private assignToParent(parent: any, key: string | number, value: unknown) {
+    if (Array.isArray(parent)) {
+      parent[Number(key)] = value;
+    } else {
+      parent[key as keyof typeof parent] = value;
+    }
+  }
+
   /** Convert JSONPath array back to string form */
   private toJsonPath(arr: (string | number)[]): string {
     if (!arr.length) return '$';

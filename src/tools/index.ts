@@ -1,1 +1,1 @@
-export { registerFunctionTools } from './registerExamples';
+export { registerCustomTools } from './registerExamples';

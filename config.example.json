@@ -24,8 +24,8 @@
   "timeout": 30000,
   
   "// API Filtering": "",
-  "whitelist": "getPrice,getPools,GET:/apiv2/*",
-  "blacklist": "scanContracts,GET:/apiv2/contracts/*",
+  "whitelist": "getPets,createPet,/pets/*",
+  "blacklist": "deletePet,/admin/*",
   
   "// Authentication & Security": "",
   "apiKey": "your-api-key",
