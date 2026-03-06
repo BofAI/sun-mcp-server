@@ -428,12 +428,22 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         tokenB: z.string().describe("Token B contract address."),
         amountADesired: z.string().describe("Desired amount of token A (raw units)."),
         amountBDesired: z.string().describe("Desired amount of token B (raw units)."),
-        amountAMin: z.string().describe("Minimum amount of token A to add."),
-        amountBMin: z.string().describe("Minimum amount of token B to add."),
-        to: z.string().describe("Recipient address for LP tokens."),
+        amountAMin: z
+          .string()
+          .optional()
+          .describe("Minimum amount of token A to add. If omitted, defaults to amountADesired with a 5% slippage buffer."),
+        amountBMin: z
+          .string()
+          .optional()
+          .describe("Minimum amount of token B to add. If omitted, defaults to amountBDesired with a 5% slippage buffer."),
+        to: z
+          .string()
+          .optional()
+          .describe("Recipient address for LP tokens. If omitted, defaults to the active wallet address."),
         deadline: z
           .union([z.string(), z.number()])
-          .describe("Unix timestamp deadline for the transaction."),
+          .optional()
+          .describe("Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes."),
       },
       annotations: {
         title: "SUNSwap V2 Add Liquidity",
@@ -451,10 +461,10 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       tokenB: string;
       amountADesired: string;
       amountBDesired: string;
-      amountAMin: string;
-      amountBMin: string;
-      to: string;
-      deadline: string | number;
+      amountAMin?: string;
+      amountBMin?: string;
+      to?: string;
+      deadline?: string | number;
     }) => {
       try {
         const txResult = await addLiquidityV2({
@@ -510,15 +520,25 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           .array(z.any())
           .optional()
           .describe("Optional router ABI; if omitted, TronWeb will attempt to infer it."),
-        tokenA: z.string().describe("Token A contract address."),
+        tokenA: z.string().describe("Token A contract address (LP token address recommended for allowance checks)."),
         tokenB: z.string().describe("Token B contract address."),
         liquidity: z.string().describe("Amount of LP tokens to burn."),
-        amountAMin: z.string().describe("Minimum amount of token A to receive."),
-        amountBMin: z.string().describe("Minimum amount of token B to receive."),
-        to: z.string().describe("Recipient of underlying tokens."),
+        amountAMin: z
+          .string()
+          .optional()
+          .describe("Minimum amount of token A to receive. If omitted, defaults to 0 (no slippage protection)."),
+        amountBMin: z
+          .string()
+          .optional()
+          .describe("Minimum amount of token B to receive. If omitted, defaults to 0 (no slippage protection)."),
+        to: z
+          .string()
+          .optional()
+          .describe("Recipient of underlying tokens. If omitted, defaults to the active wallet address."),
         deadline: z
           .union([z.string(), z.number()])
-          .describe("Unix timestamp deadline for the transaction."),
+          .optional()
+          .describe("Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes."),
       },
       annotations: {
         title: "SUNSwap V2 Remove Liquidity",
@@ -535,10 +555,10 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       tokenA: string;
       tokenB: string;
       liquidity: string;
-      amountAMin: string;
-      amountBMin: string;
-      to: string;
-      deadline: string | number;
+      amountAMin?: string;
+      amountBMin?: string;
+      to?: string;
+      deadline?: string | number;
     }) => {
       try {
         const txResult = await removeLiquidityV2({
@@ -603,12 +623,22 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         tickUpper: z.number().describe("Upper tick of the position range."),
         amount0Desired: z.string().describe("Desired amount of token0 (raw units)."),
         amount1Desired: z.string().describe("Desired amount of token1 (raw units)."),
-        amount0Min: z.string().describe("Minimum amount of token0 to deposit."),
-        amount1Min: z.string().describe("Minimum amount of token1 to deposit."),
-        recipient: z.string().describe("Recipient of the NFT representing the position."),
+        amount0Min: z
+          .string()
+          .optional()
+          .describe("Minimum amount of token0 to deposit. If omitted, defaults to amount0Desired with a 5% slippage buffer."),
+        amount1Min: z
+          .string()
+          .optional()
+          .describe("Minimum amount of token1 to deposit. If omitted, defaults to amount1Desired with a 5% slippage buffer."),
+        recipient: z
+          .string()
+          .optional()
+          .describe("Recipient of the NFT representing the position. If omitted, defaults to the active wallet address."),
         deadline: z
           .union([z.string(), z.number()])
-          .describe("Unix timestamp deadline for the transaction."),
+          .optional()
+          .describe("Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes."),
       },
       annotations: {
         title: "SUNSwap V3 Mint Position",
@@ -629,10 +659,10 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       tickUpper: number;
       amount0Desired: string;
       amount1Desired: string;
-      amount0Min: string;
-      amount1Min: string;
-      recipient: string;
-      deadline: string | number;
+      amount0Min?: string;
+      amount1Min?: string;
+      recipient?: string;
+      deadline?: string | number;
     }) => {
       try {
         const txResult = await mintPositionV3({

@@ -1,5 +1,6 @@
 import type { TronWeb } from "tronweb";
 import { getWallet, type WalletContext, type AgentWalletProvider } from "./wallet";
+import { TRC20_MIN_ABI } from "./constants";
 
 export interface ContractCallParams {
   address: string;
@@ -190,6 +191,99 @@ export async function sendContractTx(
   // Agent wallet: build unsigned tx, then delegate signing to the provider.
   const unsignedTx = await buildUnsignedContractTx(tronWeb, callParams);
   return signAndBroadcastContractTx(wallet, unsignedTx);
+}
+
+/**
+ * Read-only contract call via solidity node (walletsolidity/triggerconstantcontract).
+ * Use this for view calls like allowance so the request goes to the read path
+ * instead of full node's wallet/triggerconstantcontract.
+ */
+export async function readConstantContractSolidity(
+  tronWeb: TronWeb,
+  contractAddress: string,
+  functionSelector: string,
+  parameters: { type: string; value: string }[],
+  issuerAddressHex: string,
+): Promise<string[]> {
+  const feeLimit =
+    (tronWeb as any).feeLimit != null ? (tronWeb as any).feeLimit : 100_000_000;
+  const tx = await (tronWeb.transactionBuilder as any).triggerConfirmedConstantContract(
+    contractAddress,
+    functionSelector,
+    { callValue: 0, feeLimit },
+    parameters,
+    issuerAddressHex,
+  );
+  if (!tx || !Array.isArray(tx.constant_result)) {
+    throw new Error("Read contract (solidity) failed: no constant_result");
+  }
+  return tx.constant_result;
+}
+
+/**
+ * Ensure that a TRC20 token has at least `requiredAmount` allowance granted
+ * from the active wallet to the given spender. If the allowance is lower,
+ * this helper will submit an `approve(spender, requiredAmount)` transaction.
+ *
+ * Allowance is read via solidity node (walletsolidity/triggerconstantcontract)
+ * so we use the read path instead of full node's triggerconstantcontract.
+ */
+export async function ensureTokenAllowance(params: {
+  network?: string;
+  tokenAddress: string;
+  spender: string;
+  requiredAmount: string;
+  provider?: AgentWalletProvider;
+}): Promise<void> {
+  const network = params.network || "mainnet";
+  const wallet = getWallet({ network, provider: params.provider });
+
+  const tronWeb: TronWeb =
+    wallet.type === "local" ? wallet.tronWeb : await getReadonlyTronWeb(network);
+
+  const ownerAddress =
+    wallet.type === "local"
+      ? wallet.address
+      : await wallet.provider.getAddress();
+
+  if (!ownerAddress) {
+    throw new Error("Unable to resolve wallet address for allowance check.");
+  }
+
+  const ownerHex =
+    typeof (tronWeb as any).address?.toHex === "function"
+      ? (tronWeb as any).address.toHex(ownerAddress)
+      : ownerAddress;
+
+  const parameters = [
+    { type: "address", value: ownerAddress },
+    { type: "address", value: params.spender },
+  ];
+
+  const constantResult = await readConstantContractSolidity(
+    tronWeb,
+    params.tokenAddress,
+    "allowance(address,address)",
+    parameters,
+    ownerHex,
+  );
+
+  const currentRaw = constantResult[0];
+  const current = BigInt(currentRaw ? "0x" + currentRaw : "0");
+  const required = BigInt(params.requiredAmount);
+
+  if (required === BigInt(0) || current >= required) {
+    return;
+  }
+
+  await sendContractTx({
+    address: params.tokenAddress,
+    functionName: "approve",
+    args: [params.spender, params.requiredAmount],
+    abi: TRC20_MIN_ABI,
+    network,
+    provider: params.provider,
+  });
 }
 
 export async function getReadonlyTronWeb(network: string): Promise<TronWeb> {

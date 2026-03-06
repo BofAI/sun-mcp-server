@@ -107,16 +107,39 @@ In addition to the OpenAPI-generated tools, this server registers a set of custo
   - `sunswap_read_contract` (view/pure calls)
   - `sunswap_send_contract` (state-changing calls)
 - Swap and liquidity management:
-  - `sunswap_swap_exact_input`
-  - `sunswap_v2_add_liquidity`
-  - `sunswap_v2_remove_liquidity`
-  - `sunswap_v3_mint_position`
-  - `sunswap_v3_increase_liquidity`
+  - `sunswap_swap_exact_input` (low-level router swap, takes router address/ABI and arguments)
+  - `sunswap_swap` (high-level simple swap via Universal Router; only needs `tokenIn`, `tokenOut`, `amountIn`, optional `network`/`slippage`)
+  - `sunswap_v2_add_liquidity` (V2-style add liquidity; auto-checks/sets TRC20 approvals for both input tokens before calling router)
+  - `sunswap_v2_remove_liquidity` (V2-style remove liquidity; auto-checks/sets LP token approval before calling router)
+  - `sunswap_v3_mint_position` (V3 mint; auto-checks/sets TRC20 approvals for both input tokens before calling position manager)
+  - `sunswap_v3_increase_liquidity` (V3 increase liquidity; uses the same approval helper for additional deposits)
   - `sunswap_v3_decrease_liquidity`
-- Generic Swap Component:
-  - `sunswap_swap`
-  
-These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running.
+
+These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running. All write tools reuse the same wallet abstraction and contract helper pipeline (`readContract` / `sendContractTx` / `ensureTokenAllowance`).
+
+### SUNSWAP contract addresses and ABIs
+
+For convenience, the project ships with default SUNSWAP contract addresses and minimal ABIs in `src/sunswap/constants.ts`:
+
+- **V2 (mainnet)**:
+  - Factory: `SUNSWAP_V2_MAINNET_FACTORY`
+  - Router: `SUNSWAP_V2_MAINNET_ROUTER`
+- **V2 (Nile testnet)**:
+  - Factory: `SUNSWAP_V2_NILE_FACTORY`
+  - Router: `SUNSWAP_V2_NILE_ROUTER`
+- **V3 (mainnet)**:
+  - Factory: `SUNSWAP_V3_MAINNET_FACTORY`
+  - Position manager (NonfungiblePositionManager): `SUNSWAP_V3_MAINNET_POSITION_MANAGER`
+- **V3 (Nile testnet)**:
+  - Factory: `SUNSWAP_V3_NILE_FACTORY`
+  - Position manager: `SUNSWAP_V3_NILE_POSITION_MANAGER`
+
+The following minimal ABIs are also exposed:
+
+- `TRC20_MIN_ABI`: `allowance`, `balanceOf`, `approve` – used by `ensureTokenAllowance` for automatic approval flows.
+- `SUNSWAP_V2_FACTORY_MIN_ABI`: `getPair(tokenA, tokenB)` – used when V2 flows need to resolve pair addresses.
+
+Tool callers can either rely on these defaults (by passing just network + token addresses), or override router/position-manager addresses and ABIs explicitly via tool parameters when interacting with non-standard deployments.
 
 ## Prerequisites
 
@@ -238,3 +261,23 @@ npm start -- --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath 
 ## License
 
 MIT
+
+
+curl -X POST "http://127.0.0.1:8080/mcp" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "1",
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_v2_add_liquidity",
+      "arguments": {
+        "network": "nile",
+        "routerAddress": "TMn1qrmYUMSTXo9babrJLzepKZoPC7M6Sy",
+        "tokenA": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+        "tokenB": "TWMCMCoJPqCGw5RR7eChF2HoY3a9B8eYA3",
+        "amountADesired": "1000000",
+        "amountBDesired": "1500000"
+      }
+    }
+  }'

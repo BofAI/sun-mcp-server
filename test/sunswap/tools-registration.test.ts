@@ -84,6 +84,7 @@ describe("sunswap tool registration", () => {
       "sunswap_quote_exact_input",
       "sunswap_read_contract",
       "sunswap_swap_exact_input",
+      "sunswap_swap",
       "sunswap_get_token_price",
       "sunswap_v2_add_liquidity",
       "sunswap_v2_remove_liquidity",

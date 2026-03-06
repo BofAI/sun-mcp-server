@@ -11,7 +11,8 @@
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "lint": "eslint . --ext .ts",
     "test": "jest",
-    "test:integration": "jest --testMatch='**/test/integration/**/*.test.ts'"
+    "test:integration": "jest --testMatch='**/test/integration/**/*.test.ts'",
+    "script:test-add-liquidity": "ts-node scripts/test-add-liquidity.ts"
   },
   "bin": {
     "sun-mcp-server": "./bin/sun-mcp-server"
