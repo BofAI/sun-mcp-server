@@ -5,7 +5,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6)
 
-An MCP server focused on SUN.IO (SUNSWAP) data access. This project exposes the SUN.IO API surface defined in `specs/sunio-open-api.json` so AI clients can query TRON DEX ecosystem data including tokens, pools, prices, protocol metrics, transactions, farming, contracts, and chain status.
+An MCP server focused on the SUN.IO (SUNSWAP) ecosystem. This project currently exposes the SUN.IO API surface defined in `specs/sunio-open-api.json`, allowing AI clients to comprehensively query TRON DEX ecosystem data (including tokens, pools, prices, protocol metrics, transactions, farming, contracts, and chain status). In the future, the server will expand beyond read-only access to support core DeFi execution capabilities, such as liquidity management and token swapping operations.
 
 ## Contents
 
