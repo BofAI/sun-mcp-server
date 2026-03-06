@@ -14,7 +14,7 @@
     "test:integration": "jest --testMatch='**/test/integration/**/*.test.ts'"
   },
   "bin": {
-    "api-to-mcp": "./bin/api-to-mcp"
+    "sun-mcp-server": "./bin/sun-mcp-server"
   },
   "files": [
     "dist/**/*",
