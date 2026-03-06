@@ -45,6 +45,10 @@ export async function readContract(
 
 /**
  * Step 2: Build an unsigned transaction for a state-changing contract call.
+ *
+ * Uses triggerSmartContract with the full function selector (e.g.
+ * "swapExactInput(address,uint256,...)") and typed parameter array
+ * derived from the contract ABI.
  */
 export async function buildUnsignedContractTx(
   tronWeb: TronWeb,
@@ -60,17 +64,34 @@ export async function buildUnsignedContractTx(
     ? tronWeb.contract(params.abi, params.address)
     : await tronWeb.contract().at(params.address);
 
-  const method = (contract as any).methods[params.functionName];
-  if (!method) {
-    throw new Error(`Function ${params.functionName} not found in contract`);
+  // Resolve the ABI array – tronWeb.contract().at() stores it on the instance.
+  const abi: any[] = params.abi || (contract as any).abi || [];
+
+  const abiEntry = abi.find(
+    (entry: any) => entry.type === "function" && entry.name === params.functionName,
+  );
+  if (!abiEntry) {
+    throw new Error(`Function ${params.functionName} not found in contract ABI`);
   }
 
-  // Using transactionBuilder to obtain an unsigned transaction object that can be signed.
+  // Build full function selector, e.g. "swapExactInput(address,uint256,address[])"
+  const paramTypes = (abiEntry.inputs || []).map((i: any) => i.type).join(",");
+  const functionSelector = `${params.functionName}(${paramTypes})`;
+
+  // Build typed parameter array required by triggerSmartContract
+  const typedParams = (abiEntry.inputs || []).map((input: any, idx: number) => ({
+    type: input.type,
+    value: args[idx],
+  }));
+
+  const issuerAddress = tronWeb.defaultAddress?.base58 || tronWeb.defaultAddress?.hex || undefined;
+
   const unsignedTx = await tronWeb.transactionBuilder.triggerSmartContract(
     params.address,
-    params.functionName,
+    functionSelector,
     options,
-    args,
+    typedParams,
+    issuerAddress,
   );
 
   return unsignedTx;
@@ -111,6 +132,28 @@ export async function sendContractTx(
   const tronWeb: TronWeb =
     wallet.type === "local" ? wallet.tronWeb : (await getReadonlyTronWeb(network));
 
+  if (wallet.type === "local") {
+    // Local wallet: TronWeb instance already has the private key,
+    // use contract method .send() which builds, signs, and broadcasts in one step.
+    const contract = callParams.abi
+      ? tronWeb.contract(callParams.abi, callParams.address)
+      : await tronWeb.contract().at(callParams.address);
+
+    const method = (contract as any).methods[callParams.functionName];
+    if (!method) {
+      throw new Error(`Function ${callParams.functionName} not found in contract`);
+    }
+
+    const args = callParams.args || [];
+    const options: any = {};
+    if (callParams.value) {
+      options.callValue = callParams.value;
+    }
+
+    return method(...args).send(options);
+  }
+
+  // Agent wallet: build unsigned tx, then delegate signing to the provider.
   const unsignedTx = await buildUnsignedContractTx(tronWeb, callParams);
   return signAndBroadcastContractTx(wallet, unsignedTx);
 }
