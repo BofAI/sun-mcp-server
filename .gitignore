@@ -59,5 +59,4 @@ config.local.json
 .aider*
 
 jest.config.js
-jest.config.cjs
 Library
