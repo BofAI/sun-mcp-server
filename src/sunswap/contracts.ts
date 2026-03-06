@@ -117,16 +117,20 @@ export async function sendContractTx(
 
 export async function getReadonlyTronWeb(network: string): Promise<TronWeb> {
   // Lightweight TronWeb instance for read-only calls.
-  const { TronWeb } = await import("tronweb");
+  const tronwebModule = await import("tronweb");
+  const TronWebCtor = (tronwebModule as any).default ?? (tronwebModule as any).TronWeb;
+  if (!TronWebCtor) {
+    throw new Error("Unable to load TronWeb constructor from 'tronweb' module");
+  }
   const { getNetworkConfig } = await import("./chains");
   const config = getNetworkConfig(network);
   const apiKey = process.env.TRONGRID_API_KEY || process.env.TRON_GRID_API_KEY;
 
-  return new TronWeb({
+  return new TronWebCtor({
     fullHost: config.fullNode,
     solidityNode: config.solidityNode,
     eventServer: config.eventServer,
     headers: apiKey ? { "TRON-PRO-API-KEY": apiKey } : undefined,
-  });
+  }) as TronWeb;
 }
 
