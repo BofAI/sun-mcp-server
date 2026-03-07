@@ -1,42 +1,41 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 V2 添加流动性，输出详细错误，便于排查 HTTP 500。
+ * 本地测试 V2 移除流动性，输出详细错误，便于排查。
  *
  * 使用前请在项目根目录配置 .env，例如：
  *   TRON_PRIVATE_KEY=你的十六进制私钥
  * 或 TRON_MNEMONIC=助记词
  *
- * 运行：npx ts-node scripts/test-add-liquidity.ts
- * 或： npm run build && node -e "require('./dist/src/sunswap/liquidityV2').addLiquidityV2(...).then(console.log).catch(console.error)"
+ * 运行：npx ts-node scripts/test-remove-liquidity.ts
+ * 或： npm run script:test-remove-liquidity
  */
 
 import "dotenv/config";
-import { addLiquidityV2 } from "../src/sunswap/liquidityV2";
+import { removeLiquidityV2 } from "../src/sunswap/liquidityV2";
 import { SUNSWAP_V2_NILE_ROUTER } from "../src/sunswap/constants";
 
 const NETWORK = "nile";
 const ROUTER = SUNSWAP_V2_NILE_ROUTER;
 const TOKEN_A = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
-const TOKEN_B = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
-const AMOUNT_A = "1000000";
-const AMOUNT_B = "48333";
+const TOKEN_B = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
+/** LP 数量（18 位精度 raw，可按实际持仓改） */
+const LIQUIDITY = "156378178664";
 
 async function main() {
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);
   console.log("TRON_MNEMONIC set:", !!process.env.TRON_MNEMONIC);
   console.log("network:", NETWORK, "router:", ROUTER);
   console.log("tokenA:", TOKEN_A, "tokenB:", TOKEN_B);
-  console.log("amountADesired:", AMOUNT_A, "amountBDesired:", AMOUNT_B);
+  console.log("liquidity (LP raw):", LIQUIDITY);
   console.log("");
 
   try {
-    const result = await addLiquidityV2({
+    const result = await removeLiquidityV2({
       network: NETWORK,
       routerAddress: ROUTER,
       tokenA: TOKEN_A,
       tokenB: TOKEN_B,
-      amountADesired: AMOUNT_A,
-      amountBDesired: AMOUNT_B,
+      liquidity: LIQUIDITY,
     });
     console.log("Success:");
     console.log(JSON.stringify(result, null, 2));

@@ -12,7 +12,8 @@
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "test:integration": "jest --testMatch='**/test/integration/**/*.test.ts'",
-    "script:test-add-liquidity": "ts-node scripts/test-add-liquidity.ts"
+    "script:test-add-liquidity": "ts-node scripts/test-add-liquidity.ts",
+    "script:test-remove-liquidity": "ts-node scripts/test-remove-liquidity.ts"
   },
   "bin": {
     "sun-mcp-server": "./bin/sun-mcp-server"

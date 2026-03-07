@@ -413,7 +413,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     "sunswap_v2_add_liquidity",
     {
       description:
-        "Add liquidity to a SUNSWAP V2-style pool using the canonical addLiquidity(tokenA, tokenB, ... ) interface.",
+        "Add liquidity to a SUNSWAP V2-style pool. If tokenA or tokenB is native TRX (T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb), addLiquidityETH is used automatically; otherwise addLiquidity(tokenA, tokenB, ...) is used.",
       inputSchema: {
         network: z
           .string()
@@ -509,7 +509,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     "sunswap_v2_remove_liquidity",
     {
       description:
-        "Remove liquidity from a SUNSWAP V2-style pool using the canonical removeLiquidity(...) interface.",
+        "Remove liquidity from a SUNSWAP V2-style pool. If tokenA or tokenB is native TRX (T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb), removeLiquidityETH is used automatically; otherwise removeLiquidity(...) is used.",
       inputSchema: {
         network: z
           .string()
@@ -520,17 +520,29 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           .array(z.any())
           .optional()
           .describe("Optional router ABI; if omitted, TronWeb will attempt to infer it."),
-        tokenA: z.string().describe("Token A contract address (LP token address recommended for allowance checks)."),
-        tokenB: z.string().describe("Token B contract address."),
+        tokenA: z
+          .string()
+          .describe(
+            "Token A underlying contract address in the V2 pool (LP token is derived automatically from the factory).",
+          ),
+        tokenB: z
+          .string()
+          .describe(
+            "Token B underlying contract address in the V2 pool (LP token is derived automatically from the factory).",
+          ),
         liquidity: z.string().describe("Amount of LP tokens to burn."),
         amountAMin: z
           .string()
           .optional()
-          .describe("Minimum amount of token A to receive. If omitted, defaults to 0 (no slippage protection)."),
+          .describe(
+            "Minimum amount of token A to receive. If omitted, it is computed from pool reserves based on the LP share with a 5% slippage buffer.",
+          ),
         amountBMin: z
           .string()
           .optional()
-          .describe("Minimum amount of token B to receive. If omitted, defaults to 0 (no slippage protection)."),
+          .describe(
+            "Minimum amount of token B to receive. If omitted, it is computed from pool reserves based on the LP share with a 5% slippage buffer.",
+          ),
         to: z
           .string()
           .optional()

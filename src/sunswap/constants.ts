@@ -31,6 +31,16 @@ export const SHASTA: NetworkConstants = {
 };
 
 // ---------------------------------------------------------------------------
+// Native TRX and Wrapped TRX (for V2 pair lookups: pool is WTRX–Token)
+// ---------------------------------------------------------------------------
+
+/** Native TRX address (same on mainnet/Nile). Use this to trigger addLiquidityETH/removeLiquidityETH. */
+export const TRX_ADDRESS = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
+
+export const WTRX_MAINNET = "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR";
+export const WTRX_NILE = "TYsbWxNnyTgsZaTFaue9hqpxkU3Fkco94a";
+
+// ---------------------------------------------------------------------------
 // SUNSwap V2 canonical contracts (mainnet + Nile)
 // ---------------------------------------------------------------------------
 
@@ -98,6 +108,46 @@ export const SUNSWAP_V2_FACTORY_MIN_ABI = [
     ],
     name: "getPair",
     outputs: [{ type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+
+// Minimal V2 pair ABI for reserves / token ordering / totalSupply.
+export const SUNSWAP_V2_PAIR_MIN_ABI = [
+  {
+    constant: true,
+    inputs: [],
+    name: "getReserves",
+    outputs: [
+      { name: "_reserve0", type: "uint112" },
+      { name: "_reserve1", type: "uint112" },
+      { name: "_blockTimestampLast", type: "uint32" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "token0",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "token1",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
