@@ -19,7 +19,7 @@ const ROUTER = SUNSWAP_V2_NILE_ROUTER;
 const TOKEN_A = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
 const TOKEN_B = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
 const AMOUNT_A = "1000000";
-const AMOUNT_B = "48333";
+const AMOUNT_B = "2248333";
 
 async function main() {
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);

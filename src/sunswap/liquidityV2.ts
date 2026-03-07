@@ -76,6 +76,103 @@ interface V2PairInfo {
   totalSupply: string;
 }
 
+/** Pair info for add liquidity; pool may not exist yet (reserves 0). */
+interface V2PairInfoForAdd {
+  pairAddress: string | null;
+  reserveA: string;
+  reserveB: string;
+  totalSupply: string;
+}
+
+/**
+ * Uniswap V2 _addLiquidity: compute amounts that match pool ratio.
+ * If pool is empty (0,0), use desired amounts; else cap one side to match ratio.
+ */
+function computeOptimalAmounts(
+  amountADesired: string,
+  amountBDesired: string,
+  reserveA: string,
+  reserveB: string,
+): { amountA: string; amountB: string } {
+  const rA = BigInt(reserveA);
+  const rB = BigInt(reserveB);
+  const dA = BigInt(amountADesired);
+  const dB = BigInt(amountBDesired);
+
+  if (rA === BigInt(0) && rB === BigInt(0)) {
+    return { amountA: amountADesired, amountB: amountBDesired };
+  }
+
+  const optimalB = (dA * rB) / rA;
+  if (optimalB <= dB) {
+    return { amountA: amountADesired, amountB: optimalB.toString() };
+  }
+  const optimalA = (dB * rA) / rB;
+  return { amountA: optimalA.toString(), amountB: amountBDesired };
+}
+
+async function getV2PairInfoForAdd(
+  network: string,
+  tokenA: string,
+  tokenB: string,
+): Promise<V2PairInfoForAdd> {
+  const tronWeb = await getReadonlyTronWeb(network);
+  const normalized = network.toLowerCase();
+
+  let factoryAddress: string;
+  if (normalized === "mainnet" || normalized === "tron" || normalized === "trx") {
+    factoryAddress = SUNSWAP_V2_MAINNET_FACTORY;
+  } else if (normalized === "nile" || normalized === "testnet") {
+    factoryAddress = SUNSWAP_V2_NILE_FACTORY;
+  } else {
+    throw new Error(`Unsupported network for SUNSWAP V2 factory: ${network}`);
+  }
+
+  const lookupA = getPairLookupToken(tokenA, network);
+  const lookupB = getPairLookupToken(tokenB, network);
+
+  const factory = await tronWeb.contract(
+    SUNSWAP_V2_FACTORY_MIN_ABI as any,
+    factoryAddress,
+  );
+  const pairHex = await factory.getPair(lookupA, lookupB).call();
+  const pairBase58 = tronWeb.address.fromHex(pairHex);
+
+  const zeroBase58 = tronWeb.address.fromHex(
+    "410000000000000000000000000000000000000000",
+  );
+  if (!pairBase58 || pairBase58 === zeroBase58) {
+    return {
+      pairAddress: null,
+      reserveA: "0",
+      reserveB: "0",
+      totalSupply: "0",
+    };
+  }
+
+  const pair = await tronWeb.contract(SUNSWAP_V2_PAIR_MIN_ABI as any, pairBase58);
+  const reserves = await pair.getReserves().call();
+  const token0Hex = await pair.token0().call();
+  const token1Hex = await pair.token1().call();
+  const totalSupply = await pair.totalSupply().call();
+
+  const token0 = tronWeb.address.fromHex(token0Hex);
+  const token1 = tronWeb.address.fromHex(token1Hex);
+
+  const reserve0 = (reserves._reserve0 ?? reserves[0]).toString();
+  const reserve1 = (reserves._reserve1 ?? reserves[1]).toString();
+
+  const reserveA = token0 === lookupA ? reserve0 : reserve1;
+  const reserveB = token0 === lookupB ? reserve0 : reserve1;
+
+  return {
+    pairAddress: pairBase58,
+    reserveA,
+    reserveB,
+    totalSupply: totalSupply.toString(),
+  };
+}
+
 async function getV2PairInfo(
   network: string,
   tokenA: string,
@@ -139,10 +236,22 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
   const amountADesired = params.amountADesired;
   const amountBDesired = params.amountBDesired;
 
+  const pairForAdd = await getV2PairInfoForAdd(
+    network,
+    params.tokenA,
+    params.tokenB,
+  );
+  const { amountA: actualA, amountB: actualB } = computeOptimalAmounts(
+    amountADesired,
+    amountBDesired,
+    pairForAdd.reserveA,
+    pairForAdd.reserveB,
+  );
+
   const amountAMin =
-    params.amountAMin ?? applySlippage(amountADesired);
+    params.amountAMin ?? applySlippage(actualA);
   const amountBMin =
-    params.amountBMin ?? applySlippage(amountBDesired);
+    params.amountBMin ?? applySlippage(actualB);
 
   const to =
     params.to ??
@@ -158,9 +267,9 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
 
   if (hasTRX) {
     const otherToken = isTRX(params.tokenA) ? params.tokenB : params.tokenA;
-    const otherAmount = isTRX(params.tokenA) ? amountBDesired : amountADesired;
+    const otherAmount = isTRX(params.tokenA) ? actualB : actualA;
     const otherMin = isTRX(params.tokenA) ? amountBMin : amountAMin;
-    const trxAmount = isTRX(params.tokenA) ? amountADesired : amountBDesired;
+    const trxAmount = isTRX(params.tokenA) ? actualA : actualB;
     const trxMin = isTRX(params.tokenA) ? amountAMin : amountBMin;
 
     await ensureTokenAllowance({
@@ -186,7 +295,7 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
     network,
     tokenAddress: params.tokenA,
     spender: params.routerAddress,
-    requiredAmount: params.amountADesired,
+    requiredAmount: actualA,
     provider: params.provider,
   });
 
@@ -194,15 +303,15 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
     network,
     tokenAddress: params.tokenB,
     spender: params.routerAddress,
-    requiredAmount: amountBDesired,
+    requiredAmount: actualB,
     provider: params.provider,
   });
 
   const args = [
     params.tokenA,
     params.tokenB,
-    amountADesired,
-    amountBDesired,
+    actualA,
+    actualB,
     amountAMin,
     amountBMin,
     to,
