@@ -172,4 +172,3 @@ export const getWalletAddress = async (options: GetWalletOptions = {}): Promise<
   }
   return addr;
 };
-

@@ -66,4 +66,3 @@ export function getNetworkConfig(network: string = DEFAULT_NETWORK): NetworkConf
 
   return baseConfig;
 }
-

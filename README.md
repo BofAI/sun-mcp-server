@@ -7,6 +7,8 @@
 
 An MCP server focused on the SUN.IO (SUNSWAP) ecosystem. This project currently exposes the SUN.IO API surface defined in `specs/sunio-open-api.json`, allowing AI clients to comprehensively query TRON DEX ecosystem data (including tokens, pools, prices, protocol metrics, transactions, farming, contracts, and chain status). In the future, the server will expand beyond read-only access to support core DeFi execution capabilities, such as liquidity management and token swapping operations.
 
+An MCP server for AI-driven DeFi operations on the TRON network through the SUN.IO / SUNSWAP ecosystem.
+
 ## Contents
 
 - [Overview](#overview)
@@ -109,13 +111,29 @@ In addition to the OpenAPI-generated tools, this server registers a set of custo
 - Swap and liquidity management:
   - `sunswap_swap_exact_input` (low-level router swap, takes router address/ABI and arguments)
   - `sunswap_swap` (high-level simple swap via Universal Router; only needs `tokenIn`, `tokenOut`, `amountIn`, optional `network`/`slippage`)
-  - `sunswap_v2_add_liquidity` (V2-style add liquidity; auto-checks/sets TRC20 approvals for both input tokens before calling router)
-  - `sunswap_v2_remove_liquidity` (V2-style remove liquidity; auto-checks/sets LP token approval before calling router)
-  - `sunswap_v3_mint_position` (V3 mint; auto-checks/sets TRC20 approvals for both input tokens before calling position manager)
-  - `sunswap_v3_increase_liquidity` (V3 increase liquidity; uses the same approval helper for additional deposits)
-  - `sunswap_v3_decrease_liquidity`
+  - `sunswap_v2_add_liquidity` (V2 add liquidity; auto-checks TRC20 approvals, adaptive optimal amounts, TRX support via `addLiquidityETH`)
+  - `sunswap_v2_remove_liquidity` (V2 remove liquidity; auto-discovers LP pair, TRX support via `removeLiquidityETH`)
+  - `sunswap_v3_mint_position` (V3 mint with **auto-compute**: `fee` defaults to 3000; `tickLower`/`tickUpper` auto-set from currentPrice ± 50×tickSpacing; single-sided input auto-calculates the other token via V3 math; `amountMin` defaults to 5% slippage; `deadline` defaults to now + 30 min)
+  - `sunswap_v3_increase_liquidity` (V3 increase; single-sided input auto-compute when `token0`/`token1`/`fee` are provided; `amountMin` and `deadline` auto-set)
+  - `sunswap_v3_decrease_liquidity` (V3 decrease; `amount0Min`/`amount1Min` auto-calculated from V3 math + 5% slippage when `token0`/`token1`/`fee` are provided; `deadline` auto-set)
+  - `sunswap_v3_collect` (V3 collect accrued fees with pre-estimation of claimable amounts)
 
 These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running. All write tools reuse the same wallet abstraction and contract helper pipeline (`readContract` / `sendContractTx` / `ensureTokenAllowance`).
+
+#### V3 Auto-Compute Features
+
+The V3 tools support intelligent parameter auto-computation, minimizing the input required from AI agents:
+
+| Parameter | Mint | Increase | Decrease |
+|-----------|------|----------|----------|
+| `fee` | Defaults to 3000 | Defaults to 3000 | Defaults to 3000 |
+| `tickLower` / `tickUpper` | Auto: currentTick ± 50×tickSpacing | N/A (reads from position) | N/A |
+| Single-sided input | Provide only `amount0Desired` OR `amount1Desired`; the other is computed from pool price and V3 math | Same (requires `token0`/`token1`/`fee`) | N/A |
+| `amount0Min` / `amount1Min` | Auto: desired × 95% | Auto: desired × 95% | Auto: computed from `getAmountsForLiquidity` × 95% |
+| `recipient` / `to` | Defaults to wallet address | N/A | N/A |
+| `deadline` | Defaults to now + 30 min | Same | Same |
+
+These defaults mean a typical V3 mint can be invoked with just `token0`, `token1`, and `amount0Desired`—all other parameters are derived automatically.
 
 ### SUNSWAP contract addresses and ABIs
 

@@ -24,4 +24,3 @@ export async function getTokenPrices(params: TokenPriceRequest): Promise<TokenPr
     raw: response.data,
   };
 }
-

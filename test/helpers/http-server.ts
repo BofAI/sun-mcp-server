@@ -3,10 +3,10 @@
  * Sets up a simple HTTP server that serves static files for testing HTTP fetching
  */
 
-import http from 'http';
-import fs from 'fs';
-import path from 'path';
-import { URL } from 'url';
+import http from "http";
+import fs from "fs";
+import path from "path";
+import { URL } from "url";
 
 export interface ServerConfig {
   port: number;
@@ -15,7 +15,7 @@ export interface ServerConfig {
 
 const DEFAULT_CONFIG: ServerConfig = {
   port: 8888,
-  host: 'localhost',
+  host: "localhost",
 };
 
 export class TestHttpServer {
@@ -46,7 +46,7 @@ export class TestHttpServer {
       this.server = http.createServer((req, res) => {
         if (!req.url) {
           res.statusCode = 404;
-          res.end('Not found');
+          res.end("Not found");
           return;
         }
 
@@ -55,11 +55,11 @@ export class TestHttpServer {
         try {
           const parsedUrl = new URL(req.url, `http://${this.config.host}:${this.config.port}`);
           // Remove leading slash and decode URI components
-          let pathName = decodeURIComponent(parsedUrl.pathname.replace(/^\//, ''));
-          let filePath = path.join(this.fixturesPath, pathName);
-          
+          const pathName = decodeURIComponent(parsedUrl.pathname.replace(/^\//, ""));
+          const filePath = path.join(this.fixturesPath, pathName);
+
           console.log(`Looking for file: ${filePath}`);
-          
+
           // Check if the file exists
           if (!fs.existsSync(filePath)) {
             console.error(`File not found: ${filePath}`);
@@ -69,28 +69,28 @@ export class TestHttpServer {
           }
 
           // Set the appropriate content type
-          if (filePath.endsWith('.json')) {
-            res.setHeader('Content-Type', 'application/json');
-          } else if (filePath.endsWith('.yaml') || filePath.endsWith('.yml')) {
-            res.setHeader('Content-Type', 'text/yaml');
+          if (filePath.endsWith(".json")) {
+            res.setHeader("Content-Type", "application/json");
+          } else if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
+            res.setHeader("Content-Type", "text/yaml");
           } else {
-            res.setHeader('Content-Type', 'text/plain');
+            res.setHeader("Content-Type", "text/plain");
           }
 
           // Read the file synchronously to avoid issues with streaming
-          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          const fileContent = fs.readFileSync(filePath, "utf-8");
           res.statusCode = 200;
           res.end(fileContent);
         } catch (error) {
-          console.error('Error handling request:', error);
+          console.error("Error handling request:", error);
           res.statusCode = 500;
-          res.end('Internal server error');
+          res.end("Internal server error");
         }
       });
 
       this.server.listen(this.config.port, this.config.host, () => {
         const address = this.server?.address();
-        if (address && typeof address === 'object') {
+        if (address && typeof address === "object") {
           this.activePort = address.port;
         } else {
           this.activePort = this.config.port;
@@ -99,8 +99,8 @@ export class TestHttpServer {
         resolve();
       });
 
-      this.server.on('error', (err) => {
-        console.error('Error starting test HTTP server:', err);
+      this.server.on("error", (err) => {
+        console.error("Error starting test HTTP server:", err);
         reject(err);
       });
     });
@@ -117,14 +117,14 @@ export class TestHttpServer {
 
       this.server.close((err) => {
         if (err) {
-          console.error('Error closing test HTTP server:', err);
+          console.error("Error closing test HTTP server:", err);
           reject(err);
           return;
         }
 
         this.server = null;
         this.activePort = null;
-        console.log('Test HTTP server stopped');
+        console.log("Test HTTP server stopped");
         resolve();
       });
     });

@@ -55,12 +55,10 @@ export const SUNSWAP_V2_NILE_ROUTER = "TMn1qrmYUMSTXo9babrJLzepKZoPC7M6Sy";
 // ---------------------------------------------------------------------------
 
 export const SUNSWAP_V3_MAINNET_FACTORY = "TThJt8zaJzJMhCEScH7zWKnp5buVZqys9x";
-export const SUNSWAP_V3_MAINNET_POSITION_MANAGER =
-  "TLSWrv7eC1AZCXkRjpqMZUmvgd99cj7pPF";
+export const SUNSWAP_V3_MAINNET_POSITION_MANAGER = "TLSWrv7eC1AZCXkRjpqMZUmvgd99cj7pPF";
 
 export const SUNSWAP_V3_NILE_FACTORY = "TLJWAScHZ4Qmk1axyKMzrnoYuu2pSLer1F";
-export const SUNSWAP_V3_NILE_POSITION_MANAGER =
-  "TPQzqHbCzQfoVdAV6bLwGDos8Lk2UjXz2R";
+export const SUNSWAP_V3_NILE_POSITION_MANAGER = "TPQzqHbCzQfoVdAV6bLwGDos8Lk2UjXz2R";
 
 // ---------------------------------------------------------------------------
 // Minimal ABIs used across SUNSwap helpers (V2/V3 + TRC20)
@@ -102,10 +100,7 @@ export const TRC20_MIN_ABI = [
 export const SUNSWAP_V2_FACTORY_MIN_ABI = [
   {
     constant: true,
-    inputs: [
-      { type: "address" },
-      { type: "address" },
-    ],
+    inputs: [{ type: "address" }, { type: "address" }],
     name: "getPair",
     outputs: [{ type: "address" }],
     stateMutability: "view",
@@ -152,4 +147,3 @@ export const SUNSWAP_V2_PAIR_MIN_ABI = [
     type: "function",
   },
 ];
-

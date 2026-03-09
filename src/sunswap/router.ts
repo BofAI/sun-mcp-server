@@ -51,4 +51,3 @@ export async function swapExactInput(params: SwapExactInputParams): Promise<unkn
   // 3) broadcast
   return sendContractTx(sendParams);
 }
-

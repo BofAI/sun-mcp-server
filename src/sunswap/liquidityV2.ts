@@ -17,7 +17,7 @@ function applySlippage(amount: string): string {
   const raw = BigInt(amount || "0");
   if (raw === BigInt(0)) return "0";
   const factor = BigInt(10_000 - DEFAULT_SLIPPAGE_BPS);
-  return (raw * factor / BigInt(10_000)).toString();
+  return ((raw * factor) / BigInt(10_000)).toString();
 }
 
 /** True if the address is native TRX (used for addLiquidityETH/removeLiquidityETH). */
@@ -131,16 +131,11 @@ async function getV2PairInfoForAdd(
   const lookupA = getPairLookupToken(tokenA, network);
   const lookupB = getPairLookupToken(tokenB, network);
 
-  const factory = await tronWeb.contract(
-    SUNSWAP_V2_FACTORY_MIN_ABI as any,
-    factoryAddress,
-  );
+  const factory = await tronWeb.contract(SUNSWAP_V2_FACTORY_MIN_ABI as any, factoryAddress);
   const pairHex = await factory.getPair(lookupA, lookupB).call();
   const pairBase58 = tronWeb.address.fromHex(pairHex);
 
-  const zeroBase58 = tronWeb.address.fromHex(
-    "410000000000000000000000000000000000000000",
-  );
+  const zeroBase58 = tronWeb.address.fromHex("410000000000000000000000000000000000000000");
   if (!pairBase58 || pairBase58 === zeroBase58) {
     return {
       pairAddress: null,
@@ -153,11 +148,11 @@ async function getV2PairInfoForAdd(
   const pair = await tronWeb.contract(SUNSWAP_V2_PAIR_MIN_ABI as any, pairBase58);
   const reserves = await pair.getReserves().call();
   const token0Hex = await pair.token0().call();
-  const token1Hex = await pair.token1().call();
+  const _token1Hex = await pair.token1().call();
   const totalSupply = await pair.totalSupply().call();
 
   const token0 = tronWeb.address.fromHex(token0Hex);
-  const token1 = tronWeb.address.fromHex(token1Hex);
+  void _token1Hex;
 
   const reserve0 = (reserves._reserve0 ?? reserves[0]).toString();
   const reserve1 = (reserves._reserve1 ?? reserves[1]).toString();
@@ -173,11 +168,7 @@ async function getV2PairInfoForAdd(
   };
 }
 
-async function getV2PairInfo(
-  network: string,
-  tokenA: string,
-  tokenB: string,
-): Promise<V2PairInfo> {
+async function getV2PairInfo(network: string, tokenA: string, tokenB: string): Promise<V2PairInfo> {
   const tronWeb = await getReadonlyTronWeb(network);
   const normalized = network.toLowerCase();
 
@@ -193,16 +184,11 @@ async function getV2PairInfo(
   const lookupA = getPairLookupToken(tokenA, network);
   const lookupB = getPairLookupToken(tokenB, network);
 
-  const factory = await tronWeb.contract(
-    SUNSWAP_V2_FACTORY_MIN_ABI as any,
-    factoryAddress,
-  );
+  const factory = await tronWeb.contract(SUNSWAP_V2_FACTORY_MIN_ABI as any, factoryAddress);
   const pairHex = await factory.getPair(lookupA, lookupB).call();
   const pairBase58 = tronWeb.address.fromHex(pairHex);
 
-  const zeroBase58 = tronWeb.address.fromHex(
-    "410000000000000000000000000000000000000000",
-  );
+  const zeroBase58 = tronWeb.address.fromHex("410000000000000000000000000000000000000000");
   if (!pairBase58 || pairBase58 === zeroBase58) {
     throw new Error("Pool does not exist for this token pair.");
   }
@@ -210,11 +196,11 @@ async function getV2PairInfo(
   const pair = await tronWeb.contract(SUNSWAP_V2_PAIR_MIN_ABI as any, pairBase58);
   const reserves = await pair.getReserves().call();
   const token0Hex = await pair.token0().call();
-  const token1Hex = await pair.token1().call();
+  const _token1Hex2 = await pair.token1().call();
   const totalSupply = await pair.totalSupply().call();
 
   const token0 = tronWeb.address.fromHex(token0Hex);
-  const token1 = tronWeb.address.fromHex(token1Hex);
+  void _token1Hex2;
 
   const reserve0 = (reserves._reserve0 ?? reserves[0]).toString();
   const reserve1 = (reserves._reserve1 ?? reserves[1]).toString();
@@ -236,11 +222,7 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
   const amountADesired = params.amountADesired;
   const amountBDesired = params.amountBDesired;
 
-  const pairForAdd = await getV2PairInfoForAdd(
-    network,
-    params.tokenA,
-    params.tokenB,
-  );
+  const pairForAdd = await getV2PairInfoForAdd(network, params.tokenA, params.tokenB);
   const { amountA: actualA, amountB: actualB } = computeOptimalAmounts(
     amountADesired,
     amountBDesired,
@@ -248,20 +230,17 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
     pairForAdd.reserveB,
   );
 
-  const amountAMin =
-    params.amountAMin ?? applySlippage(actualA);
-  const amountBMin =
-    params.amountBMin ?? applySlippage(actualB);
+  const amountAMin = params.amountAMin ?? applySlippage(actualA);
+  const amountBMin = params.amountBMin ?? applySlippage(actualB);
 
   const to =
     params.to ??
-    await getWalletAddress({
+    (await getWalletAddress({
       network,
       provider: params.provider,
-    });
+    }));
 
-  const deadline =
-    params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
+  const deadline = params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
 
   const hasTRX = isTRX(params.tokenA) || isTRX(params.tokenB);
 
@@ -333,13 +312,12 @@ export async function removeLiquidityV2(params: RemoveLiquidityV2Params): Promis
 
   const to =
     params.to ??
-    await getWalletAddress({
+    (await getWalletAddress({
       network,
       provider: params.provider,
-    });
+    }));
 
-  const deadline =
-    params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
+  const deadline = params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
 
   // Discover LP token (pair) and on-chain reserves for this token pair.
   const pairInfo = await getV2PairInfo(network, params.tokenA, params.tokenB);
@@ -364,8 +342,8 @@ export async function removeLiquidityV2(params: RemoveLiquidityV2Params): Promis
       amountAMin = amountAMin ?? "0";
       amountBMin = amountBMin ?? "0";
     } else {
-      const expectedA = (liquidity * BigInt(pairInfo.reserveA) / totalSupply).toString();
-      const expectedB = (liquidity * BigInt(pairInfo.reserveB) / totalSupply).toString();
+      const expectedA = ((liquidity * BigInt(pairInfo.reserveA)) / totalSupply).toString();
+      const expectedB = ((liquidity * BigInt(pairInfo.reserveB)) / totalSupply).toString();
 
       if (!amountAMin) {
         amountAMin = applySlippage(expectedA);
@@ -412,4 +390,3 @@ export async function removeLiquidityV2(params: RemoveLiquidityV2Params): Promis
     provider: params.provider,
   });
 }
-

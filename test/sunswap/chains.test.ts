@@ -43,4 +43,3 @@ describe("sunswap chains config", () => {
     expect(() => getNetworkConfig("unknown-network")).toThrow(/Unsupported network/);
   });
 });
-

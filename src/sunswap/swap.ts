@@ -4,10 +4,7 @@ import {
   parseRouteAPIResponse,
   type ParseRouteOptions,
 } from "@sun-protocol/universal-router-sdk";
-import {
-  AllowanceTransfer,
-  type PermitSingleWithSignature,
-} from "@sun-protocol/permit2-sdk";
+import { AllowanceTransfer, type PermitSingleWithSignature } from "@sun-protocol/permit2-sdk";
 import { getWallet, type WalletContext } from "./wallet";
 import { signAndBroadcastContractTx, buildRawContractTx } from "./contracts";
 import { MAINNET, NILE, type SwapConstants } from "./constants";
@@ -133,9 +130,7 @@ export async function executeSwap(params: SwapParams): Promise<SwapResult> {
   // 1. Get wallet & tronWeb
   const wallet = getWallet({ network });
   if (wallet.type !== "local") {
-    throw new Error(
-      "Swap currently requires a local wallet (TRON_PRIVATE_KEY or TRON_MNEMONIC)",
-    );
+    throw new Error("Swap currently requires a local wallet (TRON_PRIVATE_KEY or TRON_MNEMONIC)");
   }
   const tronWeb = wallet.tronWeb;
 
@@ -166,11 +161,7 @@ export async function executeSwap(params: SwapParams): Promise<SwapResult> {
       constants.permit2,
     );
 
-    const permit2 = new AllowanceTransfer(
-      tronWeb as any,
-      constants.permit2,
-      testnet,
-    );
+    const permit2 = new AllowanceTransfer(tronWeb as any, constants.permit2, testnet);
     const now = Math.floor(Date.now() / 1000);
     const deadline = (now + 3600).toString();
     const sigDeadline = (now + 3600).toString();

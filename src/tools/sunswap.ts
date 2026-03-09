@@ -16,6 +16,7 @@ import {
   mintPositionV3,
   increaseLiquidityV3,
   decreaseLiquidityV3,
+  collectPositionV3,
 } from "../sunswap/positionsV3";
 
 export function registerSunswapTools(registerTool: RegisterToolFn): void {
@@ -58,6 +59,79 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           },
         ],
       };
+    },
+  );
+
+  registerTool(
+    "sunswap_v3_collect",
+    {
+      description:
+        "Collect accrued fees from an existing SUNSWAP V3-style position. Before executing, estimates claimable fees via a read-only collect call.",
+      inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .describe("TRON network: mainnet, nile, or shasta (default: mainnet)"),
+        positionManagerAddress: z
+          .string()
+          .describe("SUNSWAP V3 NonfungiblePositionManager contract address."),
+        abi: z
+          .array(z.any())
+          .optional()
+          .describe("Optional position manager ABI; if omitted, TronWeb will attempt to infer it."),
+        tokenId: z.string().describe("Token ID of the V3 position NFT."),
+        recipient: z
+          .string()
+          .optional()
+          .describe(
+            "Recipient of collected fees. If omitted, defaults to the active wallet address.",
+          ),
+      },
+      annotations: {
+        title: "SUNSwap V3 Collect Fees",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input: {
+      network?: string;
+      positionManagerAddress: string;
+      abi?: any[];
+      tokenId: string;
+      recipient?: string;
+    }) => {
+      try {
+        const result = await collectPositionV3({
+          network: input.network,
+          positionManagerAddress: input.positionManagerAddress,
+          abi: input.abi,
+          tokenId: input.tokenId,
+          recipient: input.recipient,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error collecting V3 fees: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
     },
   );
 
@@ -364,10 +438,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           .string()
           .optional()
           .describe("Comma-separated TRON token addresses, e.g. TR7N...,TXYZ..."),
-        symbol: z
-          .string()
-          .optional()
-          .describe("Comma-separated token symbols, e.g. SUN,TRX,USDT"),
+        symbol: z.string().optional().describe("Comma-separated token symbols, e.g. SUN,TRX,USDT"),
       },
       annotations: {
         title: "SUNSwap Get Token Price",
@@ -431,19 +502,27 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         amountAMin: z
           .string()
           .optional()
-          .describe("Minimum amount of token A to add. If omitted, defaults to amountADesired with a 5% slippage buffer."),
+          .describe(
+            "Minimum amount of token A to add. If omitted, defaults to amountADesired with a 5% slippage buffer.",
+          ),
         amountBMin: z
           .string()
           .optional()
-          .describe("Minimum amount of token B to add. If omitted, defaults to amountBDesired with a 5% slippage buffer."),
+          .describe(
+            "Minimum amount of token B to add. If omitted, defaults to amountBDesired with a 5% slippage buffer.",
+          ),
         to: z
           .string()
           .optional()
-          .describe("Recipient address for LP tokens. If omitted, defaults to the active wallet address."),
+          .describe(
+            "Recipient address for LP tokens. If omitted, defaults to the active wallet address.",
+          ),
         deadline: z
           .union([z.string(), z.number()])
           .optional()
-          .describe("Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes."),
+          .describe(
+            "Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes.",
+          ),
       },
       annotations: {
         title: "SUNSwap V2 Add Liquidity",
@@ -546,11 +625,15 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         to: z
           .string()
           .optional()
-          .describe("Recipient of underlying tokens. If omitted, defaults to the active wallet address."),
+          .describe(
+            "Recipient of underlying tokens. If omitted, defaults to the active wallet address.",
+          ),
         deadline: z
           .union([z.string(), z.number()])
           .optional()
-          .describe("Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes."),
+          .describe(
+            "Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes.",
+          ),
       },
       annotations: {
         title: "SUNSwap V2 Remove Liquidity",
@@ -615,7 +698,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     "sunswap_v3_mint_position",
     {
       description:
-        "Mint a new SUNSWAP V3-style concentrated liquidity position via NonfungiblePositionManager.mint(params).",
+        "Mint a new SUNSWAP V3 concentrated liquidity position. Supports auto-compute: if fee is omitted, defaults to 3000; if tickLower/tickUpper are omitted, reads pool currentTick and sets ±50*tickSpacing; if only one of amount0Desired/amount1Desired is provided, calculates the other from V3 math.",
       inputSchema: {
         network: z
           .string()
@@ -630,27 +713,46 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           .describe("Optional position manager ABI; if omitted, TronWeb will attempt to infer it."),
         token0: z.string().describe("Token0 contract address."),
         token1: z.string().describe("Token1 contract address."),
-        fee: z.number().describe("Pool fee tier (e.g. 100, 500, 3000)."),
-        tickLower: z.number().describe("Lower tick of the position range."),
-        tickUpper: z.number().describe("Upper tick of the position range."),
-        amount0Desired: z.string().describe("Desired amount of token0 (raw units)."),
-        amount1Desired: z.string().describe("Desired amount of token1 (raw units)."),
+        fee: z
+          .number()
+          .optional()
+          .describe("Pool fee tier (e.g. 100, 500, 3000). Defaults to 3000 if omitted."),
+        tickLower: z
+          .number()
+          .optional()
+          .describe("Lower tick. If omitted, auto-set to currentTick - 50*tickSpacing."),
+        tickUpper: z
+          .number()
+          .optional()
+          .describe("Upper tick. If omitted, auto-set to currentTick + 50*tickSpacing."),
+        amount0Desired: z
+          .string()
+          .optional()
+          .describe(
+            "Desired amount of token0 (raw units). If only one side is provided, the other is auto-calculated.",
+          ),
+        amount1Desired: z
+          .string()
+          .optional()
+          .describe(
+            "Desired amount of token1 (raw units). If only one side is provided, the other is auto-calculated.",
+          ),
         amount0Min: z
           .string()
           .optional()
-          .describe("Minimum amount of token0 to deposit. If omitted, defaults to amount0Desired with a 5% slippage buffer."),
+          .describe("Minimum amount of token0. Defaults to amount0Desired * 95%."),
         amount1Min: z
           .string()
           .optional()
-          .describe("Minimum amount of token1 to deposit. If omitted, defaults to amount1Desired with a 5% slippage buffer."),
+          .describe("Minimum amount of token1. Defaults to amount1Desired * 95%."),
         recipient: z
           .string()
           .optional()
-          .describe("Recipient of the NFT representing the position. If omitted, defaults to the active wallet address."),
+          .describe("Recipient of the position NFT. Defaults to active wallet."),
         deadline: z
           .union([z.string(), z.number()])
           .optional()
-          .describe("Unix timestamp deadline for the transaction. If omitted, defaults to now + 30 minutes."),
+          .describe("Unix timestamp deadline. Defaults to now + 30 minutes."),
       },
       annotations: {
         title: "SUNSwap V3 Mint Position",
@@ -666,18 +768,18 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       abi?: any[];
       token0: string;
       token1: string;
-      fee: number;
-      tickLower: number;
-      tickUpper: number;
-      amount0Desired: string;
-      amount1Desired: string;
+      fee?: number;
+      tickLower?: number;
+      tickUpper?: number;
+      amount0Desired?: string;
+      amount1Desired?: string;
       amount0Min?: string;
       amount1Min?: string;
       recipient?: string;
       deadline?: string | number;
     }) => {
       try {
-        const txResult = await mintPositionV3({
+        const result = await mintPositionV3({
           network: input.network,
           positionManagerAddress: input.positionManagerAddress,
           abi: input.abi,
@@ -698,7 +800,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           content: [
             {
               type: "text",
-              text: JSON.stringify(txResult, null, 2),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -722,7 +824,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     "sunswap_v3_increase_liquidity",
     {
       description:
-        "Increase liquidity of an existing SUNSWAP V3-style position via NonfungiblePositionManager.increaseLiquidity(params).",
+        "Increase liquidity of an existing SUNSWAP V3 position. If only one of amount0Desired/amount1Desired is provided along with token0/token1/fee, the other is auto-calculated. amountMin defaults to 5% slippage; deadline defaults to now + 30 min.",
       inputSchema: {
         network: z
           .string()
@@ -731,18 +833,49 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         positionManagerAddress: z
           .string()
           .describe("SUNSWAP V3 NonfungiblePositionManager contract address."),
-        abi: z
-          .array(z.any())
-          .optional()
-          .describe("Optional position manager ABI; if omitted, TronWeb will attempt to infer it."),
+        abi: z.array(z.any()).optional().describe("Optional position manager ABI."),
         tokenId: z.string().describe("Token ID of the V3 position NFT."),
-        amount0Desired: z.string().describe("Desired additional amount of token0."),
-        amount1Desired: z.string().describe("Desired additional amount of token1."),
-        amount0Min: z.string().describe("Minimum additional amount of token0."),
-        amount1Min: z.string().describe("Minimum additional amount of token1."),
+        token0: z
+          .string()
+          .optional()
+          .describe("Token0 address. Required for single-sided auto-compute and approval."),
+        token1: z
+          .string()
+          .optional()
+          .describe("Token1 address. Required for single-sided auto-compute and approval."),
+        fee: z.number().optional().describe("Pool fee tier for pool lookup. Defaults to 3000."),
+        tickLower: z
+          .number()
+          .optional()
+          .describe("Lower tick override. If omitted, reads from the existing on-chain position."),
+        tickUpper: z
+          .number()
+          .optional()
+          .describe("Upper tick override. If omitted, reads from the existing on-chain position."),
+        amount0Desired: z
+          .string()
+          .optional()
+          .describe(
+            "Desired additional amount of token0. Auto-computed if only amount1Desired is given.",
+          ),
+        amount1Desired: z
+          .string()
+          .optional()
+          .describe(
+            "Desired additional amount of token1. Auto-computed if only amount0Desired is given.",
+          ),
+        amount0Min: z
+          .string()
+          .optional()
+          .describe("Minimum additional token0. Defaults to amount0Desired * 95%."),
+        amount1Min: z
+          .string()
+          .optional()
+          .describe("Minimum additional token1. Defaults to amount1Desired * 95%."),
         deadline: z
           .union([z.string(), z.number()])
-          .describe("Unix timestamp deadline for the transaction."),
+          .optional()
+          .describe("Unix timestamp deadline. Defaults to now + 30 minutes."),
       },
       annotations: {
         title: "SUNSwap V3 Increase Liquidity",
@@ -757,18 +890,28 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       positionManagerAddress: string;
       abi?: any[];
       tokenId: string;
-      amount0Desired: string;
-      amount1Desired: string;
-      amount0Min: string;
-      amount1Min: string;
-      deadline: string | number;
+      token0?: string;
+      token1?: string;
+      fee?: number;
+      tickLower?: number;
+      tickUpper?: number;
+      amount0Desired?: string;
+      amount1Desired?: string;
+      amount0Min?: string;
+      amount1Min?: string;
+      deadline?: string | number;
     }) => {
       try {
-        const txResult = await increaseLiquidityV3({
+        const result = await increaseLiquidityV3({
           network: input.network,
           positionManagerAddress: input.positionManagerAddress,
           abi: input.abi,
           tokenId: input.tokenId,
+          token0: input.token0,
+          token1: input.token1,
+          fee: input.fee,
+          tickLower: input.tickLower,
+          tickUpper: input.tickUpper,
           amount0Desired: input.amount0Desired,
           amount1Desired: input.amount1Desired,
           amount0Min: input.amount0Min,
@@ -780,7 +923,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           content: [
             {
               type: "text",
-              text: JSON.stringify(txResult, null, 2),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -804,7 +947,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     "sunswap_v3_decrease_liquidity",
     {
       description:
-        "Decrease liquidity of an existing SUNSWAP V3-style position via NonfungiblePositionManager.decreaseLiquidity(params).",
+        "Decrease liquidity of an existing SUNSWAP V3 position. If token0/token1/fee are provided, amount0Min/amount1Min are auto-calculated from V3 math with 5% slippage. deadline defaults to now + 30 min.",
       inputSchema: {
         network: z
           .string()
@@ -813,17 +956,29 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         positionManagerAddress: z
           .string()
           .describe("SUNSWAP V3 NonfungiblePositionManager contract address."),
-        abi: z
-          .array(z.any())
-          .optional()
-          .describe("Optional position manager ABI; if omitted, TronWeb will attempt to infer it."),
+        abi: z.array(z.any()).optional().describe("Optional position manager ABI."),
         tokenId: z.string().describe("Token ID of the V3 position NFT."),
         liquidity: z.string().describe("Amount of liquidity to burn."),
-        amount0Min: z.string().describe("Minimum amount of token0 to receive."),
-        amount1Min: z.string().describe("Minimum amount of token1 to receive."),
+        token0: z
+          .string()
+          .optional()
+          .describe(
+            "Token0 address. Providing token0/token1/fee enables auto amountMin computation.",
+          ),
+        token1: z.string().optional().describe("Token1 address."),
+        fee: z.number().optional().describe("Pool fee tier for pool lookup. Defaults to 3000."),
+        amount0Min: z
+          .string()
+          .optional()
+          .describe("Minimum token0 to receive. Auto-calculated with 5% slippage if omitted."),
+        amount1Min: z
+          .string()
+          .optional()
+          .describe("Minimum token1 to receive. Auto-calculated with 5% slippage if omitted."),
         deadline: z
           .union([z.string(), z.number()])
-          .describe("Unix timestamp deadline for the transaction."),
+          .optional()
+          .describe("Unix timestamp deadline. Defaults to now + 30 minutes."),
       },
       annotations: {
         title: "SUNSwap V3 Decrease Liquidity",
@@ -839,17 +994,23 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       abi?: any[];
       tokenId: string;
       liquidity: string;
-      amount0Min: string;
-      amount1Min: string;
-      deadline: string | number;
+      token0?: string;
+      token1?: string;
+      fee?: number;
+      amount0Min?: string;
+      amount1Min?: string;
+      deadline?: string | number;
     }) => {
       try {
-        const txResult = await decreaseLiquidityV3({
+        const result = await decreaseLiquidityV3({
           network: input.network,
           positionManagerAddress: input.positionManagerAddress,
           abi: input.abi,
           tokenId: input.tokenId,
           liquidity: input.liquidity,
+          token0: input.token0,
+          token1: input.token1,
+          fee: input.fee,
           amount0Min: input.amount0Min,
           amount1Min: input.amount1Min,
           deadline: input.deadline,
@@ -859,7 +1020,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           content: [
             {
               type: "text",
-              text: JSON.stringify(txResult, null, 2),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -892,7 +1053,9 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         address: z.string().describe("Contract address in base58 or hex format."),
         functionName: z
           .string()
-          .describe("Name of the state-changing contract function to call (e.g. swap, addLiquidity)."),
+          .describe(
+            "Name of the state-changing contract function to call (e.g. swap, addLiquidity).",
+          ),
         args: z
           .array(z.any())
           .optional()
@@ -959,12 +1122,12 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         tokenIn: z
           .string()
           .describe("Input token contract address (base58). Use TRX address for native TRX."),
-        tokenOut: z
-          .string()
-          .describe("Output token contract address (base58)."),
+        tokenOut: z.string().describe("Output token contract address (base58)."),
         amountIn: z
           .string()
-          .describe("Amount of input token in raw units (e.g. '1000000' for 1 USDT with 6 decimals)."),
+          .describe(
+            "Amount of input token in raw units (e.g. '1000000' for 1 USDT with 6 decimals).",
+          ),
         network: z
           .string()
           .optional()
@@ -1022,4 +1185,3 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     },
   );
 }
-

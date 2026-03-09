@@ -25,7 +25,7 @@ export async function readContract(
 ): Promise<unknown> {
   const wallet = getWallet({ network });
   const tronWeb: TronWeb =
-    wallet.type === "local" ? wallet.tronWeb : (await getReadonlyTronWeb(network));
+    wallet.type === "local" ? wallet.tronWeb : await getReadonlyTronWeb(network);
 
   try {
     const contract = params.abi
@@ -115,10 +115,10 @@ export async function buildRawContractTx(
   params: RawContractTxParams,
 ): Promise<unknown> {
   const options: any = {};
-  if (params.callValue != null) {
+  if (params.callValue !== undefined && params.callValue !== null) {
     options.callValue = params.callValue;
   }
-  if (params.feeLimit != null) {
+  if (params.feeLimit !== undefined && params.feeLimit !== null) {
     options.feeLimit = params.feeLimit;
   }
 
@@ -165,7 +165,7 @@ export async function sendContractTx(
   const wallet = getWallet({ network, provider });
 
   const tronWeb: TronWeb =
-    wallet.type === "local" ? wallet.tronWeb : (await getReadonlyTronWeb(network));
+    wallet.type === "local" ? wallet.tronWeb : await getReadonlyTronWeb(network);
 
   if (wallet.type === "local") {
     // Local wallet: TronWeb instance already has the private key,
@@ -205,8 +205,8 @@ export async function readConstantContractSolidity(
   parameters: { type: string; value: string }[],
   issuerAddressHex: string,
 ): Promise<string[]> {
-  const feeLimit =
-    (tronWeb as any).feeLimit != null ? (tronWeb as any).feeLimit : 100_000_000;
+  const rawFeeLimit = (tronWeb as any).feeLimit;
+  const feeLimit = rawFeeLimit !== undefined && rawFeeLimit !== null ? rawFeeLimit : 100_000_000;
   const tx = await (tronWeb.transactionBuilder as any).triggerConfirmedConstantContract(
     contractAddress,
     functionSelector,
@@ -242,9 +242,7 @@ export async function ensureTokenAllowance(params: {
     wallet.type === "local" ? wallet.tronWeb : await getReadonlyTronWeb(network);
 
   const ownerAddress =
-    wallet.type === "local"
-      ? wallet.address
-      : await wallet.provider.getAddress();
+    wallet.type === "local" ? wallet.address : await wallet.provider.getAddress();
 
   if (!ownerAddress) {
     throw new Error("Unable to resolve wallet address for allowance check.");
@@ -313,4 +311,3 @@ export async function getReadonlyTronWeb(network: string): Promise<TronWeb> {
 
   return tw;
 }
-

@@ -32,9 +32,9 @@
  * ```
  */
 
-import { JSONPath } from 'jsonpath-plus';
-import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
-import deepmerge from 'deepmerge';
+import { JSONPath } from "jsonpath-plus";
+import { load as yamlLoad, dump as yamlDump } from "js-yaml";
+import deepmerge from "deepmerge";
 
 /** Overlay → info object */
 export interface OverlayInfo {
@@ -74,13 +74,15 @@ export interface OverlayDoc {
  */
 export class OverlayApplier {
   /** JSONPath‑plus options */
-  private readonly jpOptions: { resultType: 'all' } = { resultType: 'all' as const };
+  private readonly jpOptions: { resultType: "all" } = { resultType: "all" as const };
 
   /** Deep‑clone helper using structuredClone where available */
   private clone<T>(obj: T): T {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return typeof structuredClone === 'function' ? structuredClone(obj) : JSON.parse(JSON.stringify(obj));
+    return typeof structuredClone === "function"
+      ? structuredClone(obj)
+      : JSON.parse(JSON.stringify(obj));
   }
 
   /** Parse YAML or JSON text into an OverlayDoc */
@@ -109,15 +111,19 @@ export class OverlayApplier {
 
   /** Serialize object back to text */
   stringify(obj: unknown, opts: { yaml?: boolean } = {}): string {
-    return opts.yaml ? yamlDump(obj, { lineWidth: 120, noRefs: true }) : JSON.stringify(obj, null, 2);
+    return opts.yaml
+      ? yamlDump(obj, { lineWidth: 120, noRefs: true })
+      : JSON.stringify(obj, null, 2);
   }
 
   /** Public API: apply overlay to target (both can be objects or text) */
   apply(target: string | unknown, overlay: string | OverlayDoc): unknown {
-    const overlayDoc: OverlayDoc = typeof overlay === 'string' ? this.parseOverlay(overlay) : overlay;
-    if (!overlayDoc.overlay) throw new Error('Overlay document missing required "overlay" version field');
+    const overlayDoc: OverlayDoc =
+      typeof overlay === "string" ? this.parseOverlay(overlay) : overlay;
+    if (!overlayDoc.overlay)
+      throw new Error('Overlay document missing required "overlay" version field');
 
-    const targetObj: any = typeof target === 'string' ? this.parseAny(target) : target;
+    const targetObj: any = typeof target === "string" ? this.parseAny(target) : target;
     let workingDoc: any = this.clone(targetObj);
 
     for (const action of overlayDoc.actions) {
@@ -133,19 +139,24 @@ export class OverlayApplier {
 
     try {
       // First, find all matches in the document using JSONPath
-      const matches = JSONPath({ path: expr, json: doc, resultType: 'all' });
-      
+      const matches = JSONPath({ path: expr, json: doc, resultType: "all" });
+
       // Per spec: if zero matches found, silently ignore (no-op)
       if (!matches.length) return doc;
 
       // Special case for info section which gives direct property access
-      if (expr === '$.info' && update && typeof update === 'object') {
+      if (expr === "$.info" && update && typeof update === "object") {
         doc.info = deepmerge(doc.info, update as object);
         return doc;
       }
-      
+
       // Special case for path operations that need direct access
-      if (expr.startsWith("$.paths[") && expr.endsWith("].get") && update && typeof update === 'object') {
+      if (
+        expr.startsWith("$.paths[") &&
+        expr.endsWith("].get") &&
+        update &&
+        typeof update === "object"
+      ) {
         // Extract the path from the expression
         const pathMatch = expr.match(/\$\.paths\['([^']+)'\]/);
         if (pathMatch) {
@@ -154,68 +165,77 @@ export class OverlayApplier {
           return doc;
         }
       }
-      
+
       // Special case for parameter updates that need to find by name
-      if (expr.includes('parameters[?(@.name==') && update && typeof update === 'object') {
+      if (expr.includes("parameters[?(@.name==") && update && typeof update === "object") {
         // Extract path and param name from expression
         const pathMatch = expr.match(/\$\.paths\['([^']+)'\]/);
         const nameMatch = expr.match(/name=='([^']+)'/);
-        
+
         if (pathMatch && nameMatch) {
           const path = pathMatch[1];
           const paramName = nameMatch[1];
-          const method = expr.includes('.get.') ? 'get' : 
-                       expr.includes('.post.') ? 'post' : 
-                       expr.includes('.put.') ? 'put' : 
-                       expr.includes('.delete.') ? 'delete' : 'get';
-          
+          const method = expr.includes(".get.")
+            ? "get"
+            : expr.includes(".post.")
+              ? "post"
+              : expr.includes(".put.")
+                ? "put"
+                : expr.includes(".delete.")
+                  ? "delete"
+                  : "get";
+
           // Find the parameter and update it
           const params = doc.paths[path][method].parameters;
           const paramIndex = params.findIndex((p: any) => p.name === paramName);
-          
+
           if (paramIndex !== -1) {
             params[paramIndex] = deepmerge(params[paramIndex], update as object);
           }
-          
+
           return doc;
         }
       }
-      
+
       // Process matches using standard JSONPath for other cases
       for (const match of matches) {
         if (!match.path || !Array.isArray(match.path)) continue;
-        
+
         // Get the parent path and key
         const parentPath = match.path.slice(0, -1);
         const key = match.path[match.path.length - 1];
-        
+
         // Find the parent object/array that contains the node we want to modify
-        const parentRef = JSONPath({ path: this.toJsonPath(parentPath), json: doc, resultType: 'value' })[0];
+        const parentRef = JSONPath({
+          path: this.toJsonPath(parentPath),
+          json: doc,
+          resultType: "value",
+        })[0];
         if (!parentRef) continue;
-        
+
         // Handle 'remove' action - delete the node from its parent
         if (remove === true) {
           if (Array.isArray(parentRef)) {
             parentRef.splice(Number(key), 1);
-          } else if (typeof parentRef === 'object' && parentRef !== null) {
+          } else if (typeof parentRef === "object" && parentRef !== null) {
             delete parentRef[key];
           }
           continue;
         }
-        
+
         // Handle 'update' action if remove is false
         if (update !== undefined) {
           const targetNode = match.value;
-          
+
           if (Array.isArray(targetNode)) {
             // For arrays, append the update value
             targetNode.push(update);
-          } else if (typeof targetNode === 'object' && targetNode !== null) {
+          } else if (typeof targetNode === "object" && targetNode !== null) {
             // For objects, deep merge the properties
             const merged = deepmerge(targetNode, update as object, {
               arrayMerge: (dest, src) => dest.concat(src),
             });
-            
+
             // Update the parent reference to the merged object
             if (Array.isArray(parentRef)) {
               parentRef[Number(key)] = merged;
@@ -236,20 +256,22 @@ export class OverlayApplier {
       // Log error but don't throw - non-fatal per spec
       console.error(`Error applying overlay action with target ${expr}:`, err);
     }
-    
+
     return doc;
   }
 
   /** Convert JSONPath array back to string form */
   private toJsonPath(arr: (string | number)[]): string {
-    if (!arr.length) return '$';
+    if (!arr.length) return "$";
     return arr
       .map((seg, idx) => {
-        if (idx === 0) return '$';
-        if (typeof seg === 'number') return `[${seg}]`;
-        return /^[a-zA-Z_][\w$]*$/.test(seg as string) ? `.${seg}` : `["${String(seg).replace(/"/g, '\\"')}"]`;
+        if (idx === 0) return "$";
+        if (typeof seg === "number") return `[${seg}]`;
+        return /^[a-zA-Z_][\w$]*$/.test(seg as string)
+          ? `.${seg}`
+          : `["${String(seg).replace(/"/g, '\\"')}"]`;
       })
-      .join('');
+      .join("");
   }
 }
 

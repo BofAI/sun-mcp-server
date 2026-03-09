@@ -58,4 +58,3 @@ export async function getBalances(params: {
 
   return results;
 }
-
