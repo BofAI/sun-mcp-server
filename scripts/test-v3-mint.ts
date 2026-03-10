@@ -17,7 +17,7 @@ const NETWORK = "nile";
 const PM = SUNSWAP_V3_NILE_POSITION_MANAGER;
 const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"; // USDT on Nile
 const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK"; // Another token
-const FEE = 3000;
+const FEE = 500;
 
 async function main() {
   console.log("=== V3 Mint Position Test ===");
@@ -53,7 +53,7 @@ async function main() {
       token1: TOKEN_1,
       fee: FEE,
       // tickLower / tickUpper omitted → auto from currentTick ± 50*tickSpacing
-      amount0Desired: "1000000", // only token0
+      amount0Desired: "10000000", // only token0
       // amount1Desired omitted → auto-computed
     });
 

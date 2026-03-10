@@ -9,11 +9,12 @@ import {
   nearestUsableTick,
   FEE_TICK_SPACING,
 } from "./v3Math";
+import { SUNSWAP_V3_POSITION_MANAGER_MIN_ABI } from "./constants";
 
 const MAX_UINT128 = "340282366920938463463374607431768211455"; // 2^128 - 1
 
 const DEFAULT_SLIPPAGE_BPS = 500; // 5%
-const DEFAULT_TICK_RANGE_FACTOR = 50; // ± 50 * tickSpacing
+const DEFAULT_TICK_RANGE_FACTOR = 1; // ± 100 * tickSpacing
 
 function applySlippage(amount: string): string {
   const raw = BigInt(amount || "0");
@@ -81,6 +82,8 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
 
   let computedAmounts: { amount0Desired: string; amount1Desired: string } | undefined;
 
+  const inRange = sqrtPriceX96 > sqrtA && sqrtPriceX96 < sqrtB;
+
   if (amount0Desired > 0n && amount1Desired === 0n) {
     const liq = maxLiquidityForAmounts(
       sqrtPriceX96,
@@ -91,6 +94,7 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
     );
     const amts = getAmountsForLiquidity(sqrtPriceX96, sqrtA, sqrtB, liq);
     amount1Desired = amts.amount1;
+    if (inRange && amount1Desired === 0n) amount1Desired = 1n;
     computedAmounts = {
       amount0Desired: amount0Desired.toString(),
       amount1Desired: amount1Desired.toString(),
@@ -105,6 +109,7 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
     );
     const amts = getAmountsForLiquidity(sqrtPriceX96, sqrtA, sqrtB, liq);
     amount0Desired = amts.amount0;
+    if (inRange && amount0Desired === 0n) amount0Desired = 1n;
     computedAmounts = {
       amount0Desired: amount0Desired.toString(),
       amount1Desired: amount1Desired.toString(),
@@ -137,27 +142,28 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
     provider: params.provider,
   });
 
+  // Tuple must be positional array — ethers v6 in TronWeb cannot encode named objects
   const args = [
-    {
-      token0: params.token0,
-      token1: params.token1,
+    [
+      params.token0,
+      params.token1,
       fee,
       tickLower,
       tickUpper,
-      amount0Desired: amount0Desired.toString(),
-      amount1Desired: amount1Desired.toString(),
+      amount0Desired.toString(),
+      amount1Desired.toString(),
       amount0Min,
       amount1Min,
       recipient,
       deadline,
-    },
+    ],
   ];
 
   const txResult = await sendContractTx({
     address: params.positionManagerAddress,
     functionName: "mint",
     args,
-    abi: params.abi,
+    abi: params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI,
     network,
     provider: params.provider,
   });
@@ -241,7 +247,8 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
       tickUpper === null
     ) {
       const tronWeb = await getReadonlyTronWeb(network);
-      const pm = await tronWeb.contract().at(params.positionManagerAddress);
+      const pmAbi = params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI;
+      const pm = await tronWeb.contract(pmAbi, params.positionManagerAddress);
       const pos = await pm.positions(params.tokenId).call();
       tickLower = tickLower ?? Number(pos.tickLower ?? pos[5]);
       tickUpper = tickUpper ?? Number(pos.tickUpper ?? pos[6]);
@@ -250,6 +257,8 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
     const sqrtPriceX96 = BigInt(poolInfo.sqrtPriceX96);
     const sqrtA = getSqrtRatioAtTick(tickLower);
     const sqrtB = getSqrtRatioAtTick(tickUpper);
+
+    const inRange = sqrtPriceX96 > sqrtA && sqrtPriceX96 < sqrtB;
 
     if (amount0Desired > 0n && amount1Desired === 0n) {
       const liq = maxLiquidityForAmounts(
@@ -261,6 +270,7 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
       );
       const amts = getAmountsForLiquidity(sqrtPriceX96, sqrtA, sqrtB, liq);
       amount1Desired = amts.amount1;
+      if (inRange && amount1Desired === 0n) amount1Desired = 1n;
     } else {
       const liq = maxLiquidityForAmounts(
         sqrtPriceX96,
@@ -271,6 +281,7 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
       );
       const amts = getAmountsForLiquidity(sqrtPriceX96, sqrtA, sqrtB, liq);
       amount0Desired = amts.amount0;
+      if (inRange && amount0Desired === 0n) amount0Desired = 1n;
     }
     computedAmounts = {
       amount0Desired: amount0Desired.toString(),
@@ -306,21 +317,21 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
   }
 
   const args = [
-    {
-      tokenId: params.tokenId,
-      amount0Desired: amount0Desired.toString(),
-      amount1Desired: amount1Desired.toString(),
+    [
+      params.tokenId,
+      amount0Desired.toString(),
+      amount1Desired.toString(),
       amount0Min,
       amount1Min,
       deadline,
-    },
+    ],
   ];
 
   const txResult = await sendContractTx({
     address: params.positionManagerAddress,
     functionName: "increaseLiquidity",
     args,
-    abi: params.abi,
+    abi: params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI,
     network,
     provider: params.provider,
   });
@@ -374,9 +385,10 @@ export async function decreaseLiquidityV3(params: DecreaseLiquidityV3Params): Pr
       let token0 = params.token0;
       let token1 = params.token1;
 
+      const pmAbi = params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI;
       if (!token0 || !token1) {
         const tronWeb = await getReadonlyTronWeb(network);
-        const pm = await tronWeb.contract().at(params.positionManagerAddress);
+        const pm = await tronWeb.contract(pmAbi, params.positionManagerAddress);
         const pos = await pm.positions(params.tokenId).call();
         token0 = token0 || (pos.token0 ?? tronWeb.address.fromHex(pos[2]));
         token1 = token1 || (pos.token1 ?? tronWeb.address.fromHex(pos[3]));
@@ -385,7 +397,7 @@ export async function decreaseLiquidityV3(params: DecreaseLiquidityV3Params): Pr
       const poolInfo = await getV3PoolInfo(network, token0!, token1!, fee);
       if (poolInfo) {
         const tronWeb = await getReadonlyTronWeb(network);
-        const pm = await tronWeb.contract().at(params.positionManagerAddress);
+        const pm = await tronWeb.contract(pmAbi, params.positionManagerAddress);
         const pos = await pm.positions(params.tokenId).call();
         const tickLower = Number(pos.tickLower ?? pos[5]);
         const tickUpper = Number(pos.tickUpper ?? pos[6]);
@@ -406,21 +418,13 @@ export async function decreaseLiquidityV3(params: DecreaseLiquidityV3Params): Pr
     }
   }
 
-  const args = [
-    {
-      tokenId: params.tokenId,
-      liquidity: params.liquidity,
-      amount0Min: amount0Min ?? "0",
-      amount1Min: amount1Min ?? "0",
-      deadline,
-    },
-  ];
+  const args = [[params.tokenId, params.liquidity, amount0Min ?? "0", amount1Min ?? "0", deadline]];
 
   const txResult = await sendContractTx({
     address: params.positionManagerAddress,
     functionName: "decreaseLiquidity",
     args,
-    abi: params.abi,
+    abi: params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI,
     network,
     provider: params.provider,
   });
@@ -452,10 +456,10 @@ export async function collectPositionV3(
 
   const recipient = params.recipient || ownerAddress;
 
+  const pmAbi = params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI;
+
   const tronWeb = await getReadonlyTronWeb(network);
-  const pmView = params.abi
-    ? await tronWeb.contract(params.abi, params.positionManagerAddress)
-    : await tronWeb.contract().at(params.positionManagerAddress);
+  const pmView = await tronWeb.contract(pmAbi, params.positionManagerAddress);
 
   const feesRaw = await (pmView as any)
     .collect([params.tokenId, ownerAddress, MAX_UINT128, MAX_UINT128])
@@ -465,20 +469,13 @@ export async function collectPositionV3(
   const amount1 = (feesRaw.amount1 ?? feesRaw[1] ?? "0").toString();
   const estimatedFees = { amount0, amount1 };
 
-  const args = [
-    {
-      tokenId: params.tokenId,
-      recipient,
-      amount0Max: MAX_UINT128,
-      amount1Max: MAX_UINT128,
-    },
-  ];
+  const args = [[params.tokenId, recipient, MAX_UINT128, MAX_UINT128]];
 
   const txResult = await sendContractTx({
     address: params.positionManagerAddress,
     functionName: "collect",
     args,
-    abi: params.abi,
+    abi: pmAbi,
     network,
     provider: params.provider,
   });
