@@ -14,13 +14,30 @@ import { SUNSWAP_V3_POSITION_MANAGER_MIN_ABI } from "./constants";
 const MAX_UINT128 = "340282366920938463463374607431768211455"; // 2^128 - 1
 
 const DEFAULT_SLIPPAGE_BPS = 500; // 5%
-const DEFAULT_TICK_RANGE_FACTOR = 1; // ± 100 * tickSpacing
+const DEFAULT_TICK_RANGE_FACTOR = 100; // ± 100 * tickSpacing
 
 function applySlippage(amount: string): string {
   const raw = BigInt(amount || "0");
   if (raw === 0n) return "0";
   const factor = BigInt(10_000 - DEFAULT_SLIPPAGE_BPS);
   return ((raw * factor) / 10_000n).toString();
+}
+
+/**
+ * Sort two token addresses so that token0 < token1 (by hex address).
+ * V3 contracts require this ordering for all pool/position operations.
+ * Returns [sortedToken0, sortedToken1, wasSwapped].
+ */
+async function sortTokenPair(
+  tokenA: string,
+  tokenB: string,
+  network: string,
+): Promise<[string, string, boolean]> {
+  const tronWeb = await getReadonlyTronWeb(network);
+  const hexA = tronWeb.address.toHex(tokenA).toLowerCase();
+  const hexB = tronWeb.address.toHex(tokenB).toLowerCase();
+  if (hexA <= hexB) return [tokenA, tokenB, false];
+  return [tokenB, tokenA, true];
 }
 
 // ─── Mint ────────────────────────────────────────────────────────────
@@ -59,9 +76,11 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
   const network = params.network || "mainnet";
   const fee = params.fee ?? 3000;
 
-  const poolInfo = await getV3PoolInfo(network, params.token0, params.token1, fee);
-  if (!poolInfo)
-    throw new Error(`V3 pool not found for ${params.token0}/${params.token1} fee=${fee}`);
+  // V3 requires token0 < token1 sorted by hex address
+  const [token0, token1, swapped] = await sortTokenPair(params.token0, params.token1, network);
+
+  const poolInfo = await getV3PoolInfo(network, token0, token1, fee);
+  if (!poolInfo) throw new Error(`V3 pool not found for ${token0}/${token1} fee=${fee}`);
 
   const tickSpacing = poolInfo.tickSpacing || FEE_TICK_SPACING[fee] || 60;
   const currentTick = poolInfo.tick;
@@ -77,8 +96,25 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
   const sqrtA = getSqrtRatioAtTick(tickLower);
   const sqrtB = getSqrtRatioAtTick(tickUpper);
 
-  let amount0Desired = params.amount0Desired ? BigInt(params.amount0Desired) : 0n;
-  let amount1Desired = params.amount1Desired ? BigInt(params.amount1Desired) : 0n;
+  // Map user-provided amounts to sorted token order
+  let amount0Desired = swapped
+    ? params.amount1Desired
+      ? BigInt(params.amount1Desired)
+      : 0n
+    : params.amount0Desired
+      ? BigInt(params.amount0Desired)
+      : 0n;
+  let amount1Desired = swapped
+    ? params.amount0Desired
+      ? BigInt(params.amount0Desired)
+      : 0n
+    : params.amount1Desired
+      ? BigInt(params.amount1Desired)
+      : 0n;
+
+  // Also remap user-provided amountMin if present
+  const userAmount0Min = swapped ? params.amount1Min : params.amount0Min;
+  const userAmount1Min = swapped ? params.amount0Min : params.amount1Min;
 
   let computedAmounts: { amount0Desired: string; amount1Desired: string } | undefined;
 
@@ -120,33 +156,34 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
     throw new Error("At least one of amount0Desired / amount1Desired must be > 0");
   }
 
-  const amount0Min = params.amount0Min ?? applySlippage(amount0Desired.toString());
-  const amount1Min = params.amount1Min ?? applySlippage(amount1Desired.toString());
+  const amount0Min = userAmount0Min ?? "0";
+  const amount1Min = userAmount1Min ?? "0";
 
   const recipient =
     params.recipient ?? (await getWalletAddress({ network, provider: params.provider }));
   const deadline = params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60;
 
+  // Approve sorted tokens with sorted amounts
   await ensureTokenAllowance({
     network,
-    tokenAddress: params.token0,
+    tokenAddress: token0,
     spender: params.positionManagerAddress,
     requiredAmount: amount0Desired.toString(),
     provider: params.provider,
   });
   await ensureTokenAllowance({
     network,
-    tokenAddress: params.token1,
+    tokenAddress: token1,
     spender: params.positionManagerAddress,
     requiredAmount: amount1Desired.toString(),
     provider: params.provider,
   });
 
-  // Tuple must be positional array — ethers v6 in TronWeb cannot encode named objects
+  // Use sorted tokens in the mint call
   const args = [
     [
-      params.token0,
-      params.token1,
+      token0,
+      token1,
       fee,
       tickLower,
       tickUpper,
@@ -175,6 +212,14 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
     params.tickUpper === null
       ? { tickLower, tickUpper }
       : undefined;
+
+  // Map computed amounts back to user's original token order for display
+  if (computedAmounts && swapped) {
+    computedAmounts = {
+      amount0Desired: computedAmounts.amount1Desired,
+      amount1Desired: computedAmounts.amount0Desired,
+    };
+  }
 
   return { txResult, computedAmounts, computedTicks };
 }
@@ -217,25 +262,46 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
 }> {
   const network = params.network || "mainnet";
 
-  let amount0Desired = params.amount0Desired ? BigInt(params.amount0Desired) : 0n;
-  let amount1Desired = params.amount1Desired ? BigInt(params.amount1Desired) : 0n;
-
   let computedAmounts: { amount0Desired: string; amount1Desired: string } | undefined;
+
+  // Determine if tokens need sorting (affects amount mapping)
+  let swapped = false;
+  let token0 = params.token0;
+  let token1 = params.token1;
+  if (params.token0 && params.token1) {
+    [token0, token1, swapped] = await sortTokenPair(params.token0, params.token1, network);
+  }
+
+  // Map user-provided amounts to sorted token order
+  let amount0Desired = swapped
+    ? params.amount1Desired
+      ? BigInt(params.amount1Desired)
+      : 0n
+    : params.amount0Desired
+      ? BigInt(params.amount0Desired)
+      : 0n;
+  let amount1Desired = swapped
+    ? params.amount0Desired
+      ? BigInt(params.amount0Desired)
+      : 0n
+    : params.amount1Desired
+      ? BigInt(params.amount1Desired)
+      : 0n;
 
   const needAutoCompute =
     (amount0Desired > 0n && amount1Desired === 0n) ||
     (amount1Desired > 0n && amount0Desired === 0n);
 
   if (needAutoCompute) {
-    if (!params.token0 || !params.token1) {
+    if (!token0 || !token1) {
       throw new Error(
         "token0/token1/fee are required for single-sided auto-compute in increaseLiquidity",
       );
     }
     const fee = params.fee ?? 3000;
-    const poolInfo = await getV3PoolInfo(network, params.token0, params.token1, fee);
+    const poolInfo = await getV3PoolInfo(network, token0, token1, fee);
     if (!poolInfo)
-      throw new Error(`V3 pool not found for ${params.token0}/${params.token1} fee=${fee}`);
+      throw new Error(`V3 pool not found for ${token0}/${token1} fee=${fee}`);
 
     let tickLower = params.tickLower;
     let tickUpper = params.tickUpper;
@@ -293,29 +359,33 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
     throw new Error("At least one of amount0Desired / amount1Desired must be > 0");
   }
 
-  const amount0Min = params.amount0Min ?? applySlippage(amount0Desired.toString());
-  const amount1Min = params.amount1Min ?? applySlippage(amount1Desired.toString());
+  const userAmount0Min = swapped ? params.amount1Min : params.amount0Min;
+  const userAmount1Min = swapped ? params.amount0Min : params.amount1Min;
+  const amount0Min = userAmount0Min ?? "0";
+  const amount1Min = userAmount1Min ?? "0";
   const deadline = params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60;
 
-  if (params.token0) {
+  // Approve sorted tokens with sorted amounts
+  if (token0) {
     await ensureTokenAllowance({
       network,
-      tokenAddress: params.token0,
+      tokenAddress: token0,
       spender: params.positionManagerAddress,
       requiredAmount: amount0Desired.toString(),
       provider: params.provider,
     });
   }
-  if (params.token1) {
+  if (token1) {
     await ensureTokenAllowance({
       network,
-      tokenAddress: params.token1,
+      tokenAddress: token1,
       spender: params.positionManagerAddress,
       requiredAmount: amount1Desired.toString(),
       provider: params.provider,
     });
   }
 
+  // Contract call uses sorted amounts (matching position's on-chain token order)
   const args = [
     [
       params.tokenId,
@@ -335,6 +405,14 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
     network,
     provider: params.provider,
   });
+
+  // Map computed amounts back to user's original token order for display
+  if (computedAmounts && swapped) {
+    computedAmounts = {
+      amount0Desired: computedAmounts.amount1Desired,
+      amount1Desired: computedAmounts.amount0Desired,
+    };
+  }
 
   return { txResult, computedAmounts };
 }
@@ -409,8 +487,8 @@ export async function decreaseLiquidityV3(params: DecreaseLiquidityV3Params): Pr
         const liquidityBn = BigInt(params.liquidity);
         const amts = getAmountsForLiquidity(sqrtPriceX96, sqrtA, sqrtB, liquidityBn);
 
-        amount0Min = amount0Min ?? applySlippage(amts.amount0.toString());
-        amount1Min = amount1Min ?? applySlippage(amts.amount1.toString());
+        amount0Min = amount0Min ?? "0";
+        amount1Min = amount1Min ?? "0";
         computedAmountMin = { amount0Min, amount1Min };
       }
     } catch {

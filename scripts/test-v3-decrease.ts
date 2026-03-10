@@ -19,9 +19,9 @@ const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
 const FEE = 3000;
 
 /** 替换为你实际持有的 position tokenId */
-const TOKEN_ID = "1";
+const TOKEN_ID = "519";
 /** 要移除的 liquidity 数量 */
-const LIQUIDITY = "1000000";
+const LIQUIDITY = "168860193549162";
 
 async function main() {
   console.log("=== V3 Decrease Liquidity Test ===");
