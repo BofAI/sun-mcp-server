@@ -14,17 +14,27 @@ jest.mock("@scure/bip39", () => {
     generateMnemonic: jest.fn(),
     validateMnemonic: jest.fn(),
   };
-}, { virtual: true });
+});
 
 jest.mock("@scure/bip39/wordlists/english.js", () => {
   return {
     wordlist: [],
   };
-}, { virtual: true });
+});
 
 jest.mock("@scure/bip32", () => {
   return {
     HDKey: class HDKeyMock {},
+  };
+});
+
+jest.mock("@bankofai/agent-wallet", () => {
+  return {
+    WalletFactory: jest.fn(() => ({})),
+    SecureKVStore: class SecureKVStoreMock {},
+    TronWallet: class TronWalletMock {},
+    loadConfig: jest.fn(() => ({ wallets: {} })),
+    saveConfig: jest.fn(),
   };
 }, { virtual: true });
 

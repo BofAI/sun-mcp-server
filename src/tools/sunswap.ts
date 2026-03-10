@@ -6,7 +6,7 @@ import {
   type ContractCallParams,
   type ContractSendParams,
 } from "../sunswap/contracts";
-import { getWalletAddress } from "../sunswap/wallet";
+import { getWalletAddress, isLocalWalletConfigured, getConfiguredLocalWallet } from "../wallet";
 import { getBalances } from "../sunswap/balances";
 import { quoteExactInput, swapExactInput } from "../sunswap/router";
 import { getTokenPrices } from "../sunswap/price";
@@ -17,6 +17,12 @@ import {
   increaseLiquidityV3,
   decreaseLiquidityV3,
 } from "../sunswap/positionsV3";
+import {
+  listAgentWallets,
+  selectWallet,
+  getActiveWalletId,
+  isAgentWalletConfigured,
+} from "../wallet/agent-wallet";
 
 export function registerSunswapTools(registerTool: RegisterToolFn): void {
   registerTool(
@@ -40,7 +46,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       },
     },
     async ({ network }: { network?: string }) => {
-      const address = await getWalletAddress({ network });
+      const address = await getWalletAddress();
       return {
         content: [
           {
@@ -949,6 +955,134 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     },
   );
 
+  // ---------------------------------------------------------------------------
+  // Wallet management tools
+  // ---------------------------------------------------------------------------
+
+  registerTool(
+    "sunswap_list_wallets",
+    {
+      description:
+        "List all available TRON wallets. In agent-wallet mode, lists all encrypted wallets; in local mode, shows the single configured wallet.",
+      inputSchema: {},
+      annotations: {
+        title: "SUNSwap List Wallets",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async () => {
+      try {
+        if (isAgentWalletConfigured()) {
+          const wallets = await listAgentWallets();
+          const activeId = getActiveWalletId();
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  wallets,
+                  activeWalletId: activeId,
+                  mode: "agent-wallet",
+                }, null, 2),
+              },
+            ],
+          };
+        }
+
+        if (isLocalWalletConfigured()) {
+          const { address } = getConfiguredLocalWallet();
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  wallets: [{ id: "default", type: "env_configured", address }],
+                  activeWalletId: "default",
+                  mode: "local",
+                }, null, 2),
+              },
+            ],
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                wallets: [],
+                message: "No wallet configured. Set AGENT_WALLET_PASSWORD for agent-wallet mode, or TRON_PRIVATE_KEY / TRON_MNEMONIC for local mode.",
+              }, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing wallets: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  registerTool(
+    "sunswap_select_wallet",
+    {
+      description:
+        "Switch the active TRON wallet (agent-wallet mode only). Persists the selection to the agent-wallet config.",
+      inputSchema: {
+        walletId: z.string().describe("The wallet ID to switch to."),
+      },
+      annotations: {
+        title: "SUNSwap Select Wallet",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ walletId }: { walletId: string }) => {
+      try {
+        if (!isAgentWalletConfigured()) {
+          throw new Error(
+            "select_wallet is only available in agent-wallet mode. " +
+              "Configure AGENT_WALLET_PASSWORD to use agent-wallet.",
+          );
+        }
+        const result = await selectWallet(walletId);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                ...result,
+                message: `Switched active wallet to "${result.id}".`,
+              }, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error selecting wallet: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
   // Simple swap via Universal Router (tokenIn, tokenOut, amountIn)
   registerTool(
     "sunswap_swap",
@@ -1022,4 +1156,3 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     },
   );
 }
-

@@ -1,6 +1,5 @@
 import { sendContractTx, ensureTokenAllowance } from "./contracts";
-import type { AgentWalletProvider } from "./wallet";
-import { getWalletAddress } from "./wallet";
+import { getWalletAddress } from "../wallet";
 
 const DEFAULT_SLIPPAGE_BPS = 500; // 5%
 
@@ -15,7 +14,6 @@ export interface MintPositionV3Params {
   network?: string;
   positionManagerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   token0: string;
   token1: string;
@@ -34,7 +32,6 @@ export interface IncreaseLiquidityV3Params {
   network?: string;
   positionManagerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   tokenId: string;
   amount0Desired: string;
@@ -48,7 +45,6 @@ export interface DecreaseLiquidityV3Params {
   network?: string;
   positionManagerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   tokenId: string;
   liquidity: string;
@@ -63,12 +59,7 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<unkn
   const amount0Min = params.amount0Min ?? applySlippage(params.amount0Desired);
   const amount1Min = params.amount1Min ?? applySlippage(params.amount1Desired);
 
-  const recipient =
-    params.recipient ??
-    await getWalletAddress({
-      network,
-      provider: params.provider,
-    });
+  const recipient = params.recipient ?? await getWalletAddress();
 
   const deadline =
     params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
@@ -79,7 +70,6 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<unkn
     tokenAddress: params.token0,
     spender: params.positionManagerAddress,
     requiredAmount: params.amount0Desired,
-    provider: params.provider,
   });
 
   await ensureTokenAllowance({
@@ -87,7 +77,6 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<unkn
     tokenAddress: params.token1,
     spender: params.positionManagerAddress,
     requiredAmount: params.amount1Desired,
-    provider: params.provider,
   });
 
   const args = [
@@ -112,7 +101,6 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<unkn
     args,
     abi: params.abi,
     network,
-    provider: params.provider,
   });
 }
 
@@ -126,13 +114,6 @@ export async function increaseLiquidityV3(
 
   const deadline =
     params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
-
-  // Increase liquidity requires approval for any additional token0/token1 that
-  // will be pulled from the wallet. Callers should provide the corresponding
-  // token contract addresses via ABI/position manager context; here we rely on
-  // the desired amounts and assume the same token pair as the existing position.
-  // To keep the helper generic, we only ensure that at least the desired
-  // amount0/amount1 can be pulled if non-zero.
 
   const args = [
     {
@@ -151,7 +132,6 @@ export async function increaseLiquidityV3(
     args,
     abi: params.abi,
     network,
-    provider: params.provider,
   });
 }
 
@@ -177,7 +157,5 @@ export async function decreaseLiquidityV3(
     args,
     abi: params.abi,
     network: params.network || "mainnet",
-    provider: params.provider,
   });
 }
-

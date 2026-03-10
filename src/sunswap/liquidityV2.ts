@@ -1,6 +1,6 @@
-import { sendContractTx, ensureTokenAllowance, getReadonlyTronWeb } from "./contracts";
-import type { AgentWalletProvider } from "./wallet";
-import { getWalletAddress } from "./wallet";
+import { sendContractTx, ensureTokenAllowance } from "./contracts";
+import { getReadonlyTronWeb } from "../wallet/tronweb";
+import { getWalletAddress } from "../wallet";
 import {
   SUNSWAP_V2_FACTORY_MIN_ABI,
   SUNSWAP_V2_MAINNET_FACTORY,
@@ -42,7 +42,6 @@ export interface AddLiquidityV2Params {
   network?: string;
   routerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   tokenA: string;
   tokenB: string;
@@ -58,7 +57,6 @@ export interface RemoveLiquidityV2Params {
   network?: string;
   routerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   tokenA: string;
   tokenB: string;
@@ -253,12 +251,7 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
   const amountBMin =
     params.amountBMin ?? applySlippage(actualB);
 
-  const to =
-    params.to ??
-    await getWalletAddress({
-      network,
-      provider: params.provider,
-    });
+  const to = params.to ?? await getWalletAddress();
 
   const deadline =
     params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
@@ -277,7 +270,6 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
       tokenAddress: otherToken,
       spender: params.routerAddress,
       requiredAmount: otherAmount,
-      provider: params.provider,
     });
 
     return sendContractTx({
@@ -286,7 +278,6 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
       args: [otherToken, otherAmount, otherMin, trxMin, to, deadline],
       abi: params.abi,
       network,
-      provider: params.provider,
       value: trxAmount,
     });
   }
@@ -296,7 +287,6 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
     tokenAddress: params.tokenA,
     spender: params.routerAddress,
     requiredAmount: actualA,
-    provider: params.provider,
   });
 
   await ensureTokenAllowance({
@@ -304,7 +294,6 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
     tokenAddress: params.tokenB,
     spender: params.routerAddress,
     requiredAmount: actualB,
-    provider: params.provider,
   });
 
   const args = [
@@ -324,19 +313,13 @@ export async function addLiquidityV2(params: AddLiquidityV2Params): Promise<unkn
     args,
     abi: params.abi,
     network,
-    provider: params.provider,
   });
 }
 
 export async function removeLiquidityV2(params: RemoveLiquidityV2Params): Promise<unknown> {
   const network = params.network || "mainnet";
 
-  const to =
-    params.to ??
-    await getWalletAddress({
-      network,
-      provider: params.provider,
-    });
+  const to = params.to ?? await getWalletAddress();
 
   const deadline =
     params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60; // +30 minutes
@@ -350,7 +333,6 @@ export async function removeLiquidityV2(params: RemoveLiquidityV2Params): Promis
     tokenAddress: pairInfo.pairAddress,
     spender: params.routerAddress,
     requiredAmount: params.liquidity,
-    provider: params.provider,
   });
 
   let amountAMin = params.amountAMin;
@@ -389,7 +371,6 @@ export async function removeLiquidityV2(params: RemoveLiquidityV2Params): Promis
       args: [otherToken, params.liquidity, amountTokenMin, amountETHMin, to, deadline],
       abi: params.abi,
       network,
-      provider: params.provider,
     });
   }
 
@@ -409,7 +390,5 @@ export async function removeLiquidityV2(params: RemoveLiquidityV2Params): Promis
     args,
     abi: params.abi,
     network,
-    provider: params.provider,
   });
 }
-
