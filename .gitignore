@@ -60,3 +60,6 @@ config.local.json
 
 jest.config.js
 Library
+
+# AI tools
+.claude

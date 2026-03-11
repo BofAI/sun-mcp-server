@@ -1,6 +1,5 @@
 import { sendContractTx, ensureTokenAllowance, getReadonlyTronWeb } from "./contracts";
-import type { AgentWalletProvider } from "./wallet";
-import { getWalletAddress } from "./wallet";
+import { getWalletAddress } from "../wallet";
 import { getV3PoolInfo } from "./v3Pool";
 import {
   getSqrtRatioAtTick,
@@ -46,7 +45,6 @@ export interface MintPositionV3Params {
   network?: string;
   positionManagerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   token0: string;
   token1: string;
@@ -160,7 +158,7 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
   const amount1Min = userAmount1Min ?? "0";
 
   const recipient =
-    params.recipient ?? (await getWalletAddress({ network, provider: params.provider }));
+    params.recipient ?? (await getWalletAddress());
   const deadline = params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60;
 
   // Approve sorted tokens with sorted amounts
@@ -169,14 +167,12 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
     tokenAddress: token0,
     spender: params.positionManagerAddress,
     requiredAmount: amount0Desired.toString(),
-    provider: params.provider,
   });
   await ensureTokenAllowance({
     network,
     tokenAddress: token1,
     spender: params.positionManagerAddress,
     requiredAmount: amount1Desired.toString(),
-    provider: params.provider,
   });
 
   // Use sorted tokens in the mint call
@@ -202,7 +198,6 @@ export async function mintPositionV3(params: MintPositionV3Params): Promise<{
     args,
     abi: params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI,
     network,
-    provider: params.provider,
   });
 
   const computedTicks =
@@ -230,7 +225,6 @@ export interface IncreaseLiquidityV3Params {
   network?: string;
   positionManagerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   tokenId: string;
 
@@ -372,7 +366,6 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
       tokenAddress: token0,
       spender: params.positionManagerAddress,
       requiredAmount: amount0Desired.toString(),
-      provider: params.provider,
     });
   }
   if (token1) {
@@ -381,7 +374,6 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
       tokenAddress: token1,
       spender: params.positionManagerAddress,
       requiredAmount: amount1Desired.toString(),
-      provider: params.provider,
     });
   }
 
@@ -403,7 +395,6 @@ export async function increaseLiquidityV3(params: IncreaseLiquidityV3Params): Pr
     args,
     abi: params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI,
     network,
-    provider: params.provider,
   });
 
   // Map computed amounts back to user's original token order for display
@@ -423,7 +414,6 @@ export interface DecreaseLiquidityV3Params {
   network?: string;
   positionManagerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   tokenId: string;
   liquidity: string;
@@ -503,8 +493,7 @@ export async function decreaseLiquidityV3(params: DecreaseLiquidityV3Params): Pr
     functionName: "decreaseLiquidity",
     args,
     abi: params.abi ?? SUNSWAP_V3_POSITION_MANAGER_MIN_ABI,
-    network,
-    provider: params.provider,
+    network
   });
 
   return { txResult, computedAmountMin };
@@ -516,7 +505,6 @@ export interface CollectPositionV3Params {
   network?: string;
   positionManagerAddress: string;
   abi?: any[];
-  provider?: AgentWalletProvider;
 
   tokenId: string;
   recipient?: string;
@@ -527,10 +515,7 @@ export async function collectPositionV3(
 ): Promise<{ estimatedFees: { amount0: string; amount1: string }; txResult: unknown }> {
   const network = params.network || "mainnet";
 
-  const ownerAddress = await getWalletAddress({
-    network,
-    provider: params.provider,
-  });
+  const ownerAddress = await getWalletAddress();
 
   const recipient = params.recipient || ownerAddress;
 
@@ -555,7 +540,6 @@ export async function collectPositionV3(
     args,
     abi: pmAbi,
     network,
-    provider: params.provider,
   });
 
   return { estimatedFees, txResult };

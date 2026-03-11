@@ -14,7 +14,7 @@ import {
   getCLPositionManagerAddress,
   getV4PositionInfo,
 } from "../src/sunswap/positionsV4";
-import { isLocalWalletConfigured } from "../src/sunswap/wallet";
+import { isLocalWalletConfigured, initWallet } from "../src/wallet";
 
 const NETWORK = "nile";
 
@@ -31,6 +31,9 @@ async function main() {
     console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
     process.exit(1);
   }
+
+  // Initialize wallet singleton
+  await initWallet();
 
   const PM = getCLPositionManagerAddress(NETWORK);
 

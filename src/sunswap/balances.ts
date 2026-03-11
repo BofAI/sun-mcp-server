@@ -1,5 +1,5 @@
-import { getReadonlyTronWeb } from "./contracts";
-import { getWalletAddress } from "./wallet";
+import { getReadonlyTronWeb } from "../wallet/tronweb";
+import { getWalletAddress } from "../wallet";
 
 export interface TokenBalanceRequest {
   address: string;
@@ -23,7 +23,7 @@ export async function getBalances(params: {
   const owner =
     params.ownerAddress && params.ownerAddress.trim().length > 0
       ? params.ownerAddress
-      : await getWalletAddress({ network });
+      : await getWalletAddress();
 
   const tronWeb = await getReadonlyTronWeb(network);
 

@@ -18,7 +18,7 @@ import {
   sellToken,
   getMemeTokenBalance,
 } from "../src/sunswap/sunpump";
-import { isLocalWalletConfigured, getWalletAddress } from "../src/sunswap/wallet";
+import { isLocalWalletConfigured, getWalletAddress, initWallet } from "../src/wallet";
 
 // ===================== Configuration =====================
 const NETWORK = "nile";
@@ -40,7 +40,10 @@ async function main() {
     process.exit(1);
   }
 
-  const walletAddress = await getWalletAddress({ network: NETWORK });
+  // Initialize wallet singleton
+  await initWallet();
+
+  const walletAddress = await getWalletAddress();
   console.log(`Wallet: ${walletAddress}`);
   console.log(`Network: ${NETWORK}`);
   console.log(`Token: ${TOKEN_ADDRESS}`);

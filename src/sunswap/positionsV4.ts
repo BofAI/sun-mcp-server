@@ -14,8 +14,7 @@ import { V4 } from "@sun-protocol/universal-router-sdk";
 import { zeroAddress } from "viem";
 import { AllowanceTransfer, type PermitSingle } from "@sun-protocol/permit2-sdk";
 import { sendContractTx, getReadonlyTronWeb } from "./contracts";
-import type { AgentWalletProvider } from "./wallet";
-import { getWallet, getWalletAddress } from "./wallet";
+import { getWallet, getWalletAddress } from "../wallet";
 import {
   getSqrtRatioAtTick,
   maxLiquidityForAmounts,
@@ -215,14 +214,10 @@ async function approveToPermit2(
   network: string,
   tokenAddress: string,
   amount: bigint,
-  provider?: AgentWalletProvider,
 ): Promise<void> {
-  const wallet = getWallet({ network, provider });
-  if (wallet.type !== "local") {
-    throw new Error("Permit2 approval requires a local wallet");
-  }
-
-  const tronWeb = wallet.tronWeb;
+  const wallet = getWallet();
+  const tronWeb = await wallet.getTronWeb(network);
+  const walletAddress = await wallet.getAddress();
   const permit2Address = getPermit2Address(network);
 
   // Check current allowance
@@ -231,7 +226,7 @@ async function approveToPermit2(
     "allowance(address,address)",
     {},
     [
-      { type: "address", value: wallet.address },
+      { type: "address", value: walletAddress },
       { type: "address", value: permit2Address },
     ],
   );
@@ -256,8 +251,10 @@ async function approveToPermit2(
     ],
   );
 
-  const signedTx = await tronWeb.trx.sign(approveTx.transaction);
-  await tronWeb.trx.sendRawTransaction(signedTx);
+  const signed = await wallet.signAndBroadcast(approveTx as unknown as Record<string, unknown>, network);
+  if (!signed.result) {
+    throw new Error("Failed to approve token to Permit2");
+  }
 
   // Wait for approval to be confirmed
   await sleep(APPROVAL_DELAY_MS);
@@ -269,14 +266,10 @@ async function generatePermit2Signature(
   tokenAddress: string,
   amount: bigint,
   spender: string,
-  provider?: AgentWalletProvider,
 ): Promise<Permit2Signature> {
-  const wallet = getWallet({ network, provider });
-  if (wallet.type !== "local") {
-    throw new Error("Permit2 signature generation requires a local wallet");
-  }
-
-  const tronWeb = wallet.tronWeb;
+  const wallet = getWallet();
+  const tronWeb = await wallet.getTronWeb(network);
+  const walletAddress = await wallet.getAddress();
   const permit2Address = getPermit2Address(network);
   const testnet = network.toLowerCase() === "nile" || network.toLowerCase() === "testnet";
 
@@ -286,9 +279,9 @@ async function generatePermit2Signature(
   const deadline = (now + 3600).toString(); // 1 hour expiration
   const sigDeadline = (now + 3600).toString();
 
-  const permitSingleWithSignature = await permit2.generatePermitSignature(
+  const { domain, permitSingle } = await permit2.generatePermitSignData(
     {
-      owner: wallet.address,
+      owner: walletAddress,
       token: tokenAddress,
       amount,
       deadline,
@@ -297,12 +290,27 @@ async function generatePermit2Signature(
     sigDeadline,
   );
 
-  return {
-    ...permitSingleWithSignature,
-    signature: (permitSingleWithSignature.signature.startsWith("0x")
-      ? permitSingleWithSignature.signature
-      : "0x" + permitSingleWithSignature.signature) as `0x${string}`,
+  const PERMIT_TYPES = {
+    PermitSingle: [
+      { name: "details", type: "PermitDetails" },
+      { name: "spender", type: "address" },
+      { name: "sigDeadline", type: "uint256" },
+    ],
+    PermitDetails: [
+      { name: "token", type: "address" },
+      { name: "amount", type: "uint160" },
+      { name: "expiration", type: "uint48" },
+      { name: "nonce", type: "uint48" },
+    ],
   };
+
+  const rawSig = await wallet.signTypedData("PermitSingle", domain, PERMIT_TYPES, permitSingle as unknown as Record<string, unknown>);
+  const signature = `0x${rawSig}` as `0x${string}`;
+
+  return {
+    ...permitSingle,
+    signature,
+  } as Permit2Signature;
 }
 
 /** Calculate tick from sqrtPriceX96 (approximate). */
@@ -324,7 +332,6 @@ async function callMulticall(
   calls: `0x${string}`[],
   callValue: number,
   network: string,
-  provider?: AgentWalletProvider,
 ): Promise<unknown> {
   const abi = V4.CLPositionManagerAbi as unknown as { type: string; name: string; inputs: unknown[] }[];
   return sendContractTx({
@@ -333,7 +340,6 @@ async function callMulticall(
     args: [calls],
     abi,
     network,
-    provider,
     value: callValue > 0 ? callValue.toString() : undefined,
   });
 }
@@ -343,7 +349,6 @@ async function callMulticall(
 export interface MintPositionV4Params {
   network?: string;
   positionManagerAddress?: string;
-  provider?: AgentWalletProvider;
 
   token0: string;
   token1: string;
@@ -469,13 +474,13 @@ export async function mintPositionV4(params: MintPositionV4Params): Promise<{
   const amount0Max = toAmountMax(amount0, params.slippage);
   const amount1Max = toAmountMax(amount1, params.slippage);
 
-  const recipient = params.recipient ?? (await getWalletAddress({ network, provider: params.provider }));
+  const recipient = params.recipient ?? (await getWalletAddress());
   const recipientEvm = toEvmHex(tronWeb, recipient);
   const deadline = BigInt(params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60);
   const hookData = (params.hookData ?? "0x") as `0x${string}`;
 
   // Get owner address for Permit2
-  const ownerAddress = await getWalletAddress({ network, provider: params.provider });
+  const ownerAddress = await getWalletAddress();
   const ownerEvm = toEvmHex(tronWeb, ownerAddress);
 
   // Permit2 flow: approve tokens to Permit2, then generate signatures
@@ -483,7 +488,7 @@ export async function mintPositionV4(params: MintPositionV4Params): Promise<{
 
   if (encodedPoolKey.currency0 !== ZERO_HEX_ADDRESS) {
     // Approve token0 to Permit2
-    await approveToPermit2(network, token0, amount0Max, params.provider);
+    await approveToPermit2(network, token0, amount0Max);
 
     // Generate Permit2 signature for CLPositionManager
     const permit2Sig0 = await generatePermit2Signature(
@@ -491,14 +496,13 @@ export async function mintPositionV4(params: MintPositionV4Params): Promise<{
       token0,
       amount0Max,
       address,
-      params.provider,
     );
     permit2Calls.push(encodePermit2Call(ownerEvm, permit2Sig0));
   }
 
   if (encodedPoolKey.currency1 !== ZERO_HEX_ADDRESS) {
     // Approve token1 to Permit2
-    await approveToPermit2(network, token1, amount1Max, params.provider);
+    await approveToPermit2(network, token1, amount1Max);
 
     // Generate Permit2 signature for CLPositionManager
     const permit2Sig1 = await generatePermit2Signature(
@@ -506,7 +510,6 @@ export async function mintPositionV4(params: MintPositionV4Params): Promise<{
       token1,
       amount1Max,
       address,
-      params.provider,
     );
     permit2Calls.push(encodePermit2Call(ownerEvm, permit2Sig1));
   }
@@ -581,7 +584,7 @@ export async function mintPositionV4(params: MintPositionV4Params): Promise<{
   calls.push(modifyLiquiditiesCall);
 
   console.log(`[mintPositionV4] Total multicall count: ${calls.length}`);
-  const txResult = await callMulticall(address, calls, callValue, network, params.provider);
+  const txResult = await callMulticall(address, calls, callValue, network);
 
   const computedTicks =
     params.tickLower == null || params.tickUpper == null ? { tickLower, tickUpper } : undefined;
@@ -602,7 +605,6 @@ export async function mintPositionV4(params: MintPositionV4Params): Promise<{
 export interface IncreaseLiquidityV4Params {
   network?: string;
   positionManagerAddress?: string;
-  provider?: AgentWalletProvider;
 
   tokenId: string;
   token0?: string;
@@ -692,7 +694,7 @@ export async function increaseLiquidityV4(
   const amount0Max = toAmountMax(amount0, params.slippage);
   const amount1Max = toAmountMax(amount1, params.slippage);
 
-  const ownerAddress = await getWalletAddress({ network, provider: params.provider });
+  const ownerAddress = await getWalletAddress();
   const ownerEvm = toEvmHex(tronWeb, ownerAddress);
   const recipientEvm = ownerEvm;
   const deadline = BigInt(params.deadline ?? Math.floor(Date.now() / 1000) + 30 * 60);
@@ -702,25 +704,23 @@ export async function increaseLiquidityV4(
   const permit2Calls: `0x${string}`[] = [];
 
   if (encodedPoolKey.currency0 !== ZERO_HEX_ADDRESS) {
-    await approveToPermit2(network, token0, amount0Max, params.provider);
+    await approveToPermit2(network, token0, amount0Max);
     const permit2Sig0 = await generatePermit2Signature(
       network,
       token0,
       amount0Max,
       address,
-      params.provider,
     );
     permit2Calls.push(encodePermit2Call(ownerEvm, permit2Sig0));
   }
 
   if (encodedPoolKey.currency1 !== ZERO_HEX_ADDRESS) {
-    await approveToPermit2(network, token1, amount1Max, params.provider);
+    await approveToPermit2(network, token1, amount1Max);
     const permit2Sig1 = await generatePermit2Signature(
       network,
       token1,
       amount1Max,
       address,
-      params.provider,
     );
     permit2Calls.push(encodePermit2Call(ownerEvm, permit2Sig1));
   }
@@ -775,7 +775,7 @@ export async function increaseLiquidityV4(
   calls.push(...permit2Calls);
   calls.push(modifyLiquiditiesCall);
 
-  const txResult = await callMulticall(address, calls, callValue, network, params.provider);
+  const txResult = await callMulticall(address, calls, callValue, network);
 
   let computedAmounts: { amount0Desired: string; amount1Desired: string } = {
     amount0Desired: amount0.toString(),
@@ -796,7 +796,6 @@ export async function increaseLiquidityV4(
 export interface DecreaseLiquidityV4Params {
   network?: string;
   positionManagerAddress?: string;
-  provider?: AgentWalletProvider;
 
   tokenId: string;
   liquidity: string;
@@ -862,7 +861,7 @@ export async function decreaseLiquidityV4(
     args: [payload, deadline],
   });
 
-  const txResult = await callMulticall(address, [modifyLiquiditiesCall], 0, network, params.provider);
+  const txResult = await callMulticall(address, [modifyLiquiditiesCall], 0, network);
 
   return {
     txResult,
@@ -878,7 +877,6 @@ export async function decreaseLiquidityV4(
 export interface CollectPositionV4Params {
   network?: string;
   positionManagerAddress?: string;
-  provider?: AgentWalletProvider;
 
   tokenId: string;
   token0?: string;
@@ -960,7 +958,7 @@ export async function collectPositionV4(
     args: [payload, deadline],
   });
 
-  const txResult = await callMulticall(address, [modifyLiquiditiesCall], 0, network, params.provider);
+  const txResult = await callMulticall(address, [modifyLiquiditiesCall], 0, network);
 
   return { txResult };
 }

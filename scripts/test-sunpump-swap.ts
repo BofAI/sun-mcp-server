@@ -12,17 +12,17 @@ dotenv.config();
 
 import { executeSwap } from "../src/sunswap/swap";
 import { getSunPumpTokenInfo, SunPumpTokenState } from "../src/sunswap/sunpump";
-import { isLocalWalletConfigured, getWalletAddress } from "../src/sunswap/wallet";
+import { isLocalWalletConfigured, getWalletAddress, initWallet } from "../src/wallet";
 import { TRX_ADDRESS } from "../src/sunswap/constants";
 
 // ===================== Configuration =====================
 const NETWORK = "nile";
 // Replace with actual SunPump meme token address
-const MEME_TOKEN = "TAsJEbT9URv9TCZukeuuhG21tywNzvn6P5";
+const MEME_TOKEN = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
 // Amount of TRX to spend on buy (in sun, 1 TRX = 1,000,000 sun)
 const BUY_TRX_AMOUNT = "1000000"; // 1 TRX
 // Amount of tokens to sell (in smallest units, e.g. 18 decimals)
-const SELL_TOKEN_AMOUNT = "1000000000000000000000"; // 1000 tokens (if 18 decimals)
+const SELL_TOKEN_AMOUNT = "1000000"; // 1000 tokens (if 18 decimals)
 // Slippage tolerance
 const SLIPPAGE = 0.05; // 5%
 // Test mode: "buy" | "sell" | "both"
@@ -39,7 +39,10 @@ async function main() {
     process.exit(1);
   }
 
-  const walletAddress = await getWalletAddress({ network: NETWORK });
+  // Initialize wallet singleton
+  await initWallet();
+
+  const walletAddress = await getWalletAddress();
   console.log(`Wallet: ${walletAddress}`);
   console.log(`Network: ${NETWORK}`);
   console.log(`Meme Token: ${MEME_TOKEN}`);

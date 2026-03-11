@@ -102,6 +102,8 @@ In addition to the OpenAPI-generated tools, this server registers a set of custo
 - Wallet and balances:
   - `sunswap_get_wallet_address`
   - `sunswap_get_balances`
+  - `sunswap_list_wallets` (agent-wallet mode: list all available wallets)
+  - `sunswap_select_wallet` (agent-wallet mode: switch active wallet)
 - Pricing and quoting:
   - `sunswap_get_token_price`
   - `sunswap_quote_exact_input`
@@ -118,7 +120,7 @@ In addition to the OpenAPI-generated tools, this server registers a set of custo
   - `sunswap_v3_decrease_liquidity` (V3 decrease; `amount0Min`/`amount1Min` auto-calculated from V3 math + 5% slippage when `token0`/`token1`/`fee` are provided; `deadline` auto-set)
   - `sunswap_v3_collect` (V3 collect accrued fees with pre-estimation of claimable amounts)
 
-These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running. All write tools reuse the same wallet abstraction and contract helper pipeline (`readContract` / `sendContractTx` / `ensureTokenAllowance`).
+These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running. All write tools reuse the unified `Wallet` abstraction (`src/wallet/`) and contract helper pipeline (`readContract` / `sendContractTx` / `ensureTokenAllowance`).
 
 #### V3 Auto-Compute Features
 
@@ -192,22 +194,45 @@ Key environment variables:
 - `CUSTOM_HEADERS`, `HEADER_*`
 - `TARGET_API_TIMEOUT_MS`
 
-### TRON wallet configuration for write operations
+### Wallet configuration for write operations
 
-The SUNSWAP tools support both **read-only** and **state-changing** (write) interactions.  
-Write operations require a TRON wallet to be available to the server, either via local environment variables or an Agent Wallet provider injected by the host.
+The SUNSWAP tools support both **read-only** and **state-changing** (write) interactions.
+Write operations require a wallet. The server supports two wallet modes, resolved at startup by `initWallet()` in `src/wallet/index.ts`:
 
-Local wallet configuration (used by `src/sunswap/wallet.ts`):
+| Priority | Mode | Required env |
+|----------|------|-------------|
+| 1 | **Agent Wallet** (encrypted, key never exposed) | `AGENT_WALLET_PASSWORD` |
+| 2 | **Local Wallet** (raw private key / mnemonic) | `TRON_PRIVATE_KEY` or `TRON_MNEMONIC` |
+
+If neither is configured, the server runs in **read-only mode** — write tools will throw an error.
+
+#### Agent Wallet mode
+
+Uses the [`@bankofai/agent-wallet`](https://github.com/bankofai/agent-wallet) SDK to manage encrypted wallets. Private keys are never exposed to the server process.
+
+- `AGENT_WALLET_PASSWORD` (**required**): Decryption password for the agent-wallet keystore.
+- `AGENT_WALLET_DIR`: Path to the agent-wallet secrets directory (default: `~/.agent-wallet`). Supports `~/` expansion.
+
+You must create a wallet first using the agent-wallet CLI:
+
+```bash
+npx agent-wallet generate --name my-wallet
+```
+
+At runtime, use `sunswap_list_wallets` and `sunswap_select_wallet` to inspect and switch between wallets.
+
+#### Local Wallet mode
 
 - `TRON_PRIVATE_KEY`: Hex private key (with or without `0x` prefix).
 - `TRON_MNEMONIC`: BIP-39 mnemonic phrase (12 or 24 words).
-- `TRON_ACCOUNT_INDEX`: Optional account index for HD wallet derivation (default: `0`).
-- `TRONGRID_API_KEY` / `TRON_GRID_API_KEY`: Optional TronGrid API key used when constructing `TronWeb` instances.
-- `TRON_RPC_URL`: Optional override for the TRON RPC endpoint; when set, it replaces the default `fullNode`, `solidityNode`, and `eventServer` URLs from the built-in network table.
+- `TRON_ACCOUNT_INDEX`: Optional HD derivation index (default: `0`).
 
-If neither `TRON_PRIVATE_KEY` nor `TRON_MNEMONIC` is set and no Agent Wallet provider is supplied, write tools will throw an error indicating that no wallet is available.
+#### Shared options
 
-**Security note**: keep TRON private keys and mnemonics in environment variables or a secure secrets manager. Do not commit them to source control.
+- `TRONGRID_API_KEY` / `TRON_GRID_API_KEY`: Optional TronGrid API key for higher rate limits.
+- `TRON_RPC_URL`: Optional override for the TRON RPC endpoint; replaces the default `fullNode`, `solidityNode`, and `eventServer` URLs.
+
+**Security note**: keep private keys, mnemonics, and wallet passwords in environment variables or a secure secrets manager. Do not commit them to source control.
 
 ## Usage
 
@@ -279,23 +304,3 @@ npm start -- --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath 
 ## License
 
 MIT
-
-
-curl -X POST "http://127.0.0.1:8080/mcp" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": "1",
-    "method": "tools/call",
-    "params": {
-      "name": "sunswap_v2_add_liquidity",
-      "arguments": {
-        "network": "nile",
-        "routerAddress": "TMn1qrmYUMSTXo9babrJLzepKZoPC7M6Sy",
-        "tokenA": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
-        "tokenB": "TWMCMCoJPqCGw5RR7eChF2HoY3a9B8eYA3",
-        "amountADesired": "1000000",
-        "amountBDesired": "1500000"
-      }
-    }
-  }'

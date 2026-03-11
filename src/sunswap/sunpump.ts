@@ -4,7 +4,7 @@
  */
 
 import { readContract, sendContractTx, getReadonlyTronWeb } from "./contracts";
-import { getWalletAddress, type AgentWalletProvider } from "./wallet";
+import { getWalletAddress } from "../wallet";
 import { SUNPUMP_MAINNET, SUNPUMP_NILE, SUNPUMP_ABI, TRC20_MIN_ABI } from "./constants";
 
 // ---------------------------------------------------------------------------
@@ -284,7 +284,6 @@ export interface BuyTokenParams {
   minTokenOut?: string;
   slippage?: number;
   network?: string;
-  provider?: AgentWalletProvider;
 }
 
 export interface BuyTokenResult {
@@ -331,7 +330,6 @@ export async function buyToken(params: BuyTokenParams): Promise<BuyTokenResult> 
     value: params.trxAmount,
     abi: SUNPUMP_ABI,
     network,
-    provider: params.provider,
   });
 
   return {
@@ -349,7 +347,6 @@ export interface SellTokenParams {
   minTrxOut?: string;
   slippage?: number;
   network?: string;
-  provider?: AgentWalletProvider;
 }
 
 export interface SellTokenResult {
@@ -390,7 +387,7 @@ export async function sellToken(params: SellTokenParams): Promise<SellTokenResul
   }
 
   const tronWeb = await getReadonlyTronWeb(network);
-  const ownerAddress = await getWalletAddress({ network, provider: params.provider });
+  const ownerAddress = await getWalletAddress();
 
   const tokenContract = await tronWeb.contract(TRC20_MIN_ABI as never, params.tokenAddress);
   const allowance = await (
@@ -411,7 +408,6 @@ export async function sellToken(params: SellTokenParams): Promise<SellTokenResul
       args: [sunpumpAddress, maxUint256.toString()],
       abi: TRC20_MIN_ABI,
       network,
-      provider: params.provider,
     });
 
     await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -423,7 +419,6 @@ export async function sellToken(params: SellTokenParams): Promise<SellTokenResul
     args: [params.tokenAddress, params.tokenAmount, minTrxOut.toString()],
     abi: SUNPUMP_ABI,
     network,
-    provider: params.provider,
   });
 
   return {
@@ -446,10 +441,9 @@ export async function getMemeTokenBalance(
   tokenAddress: string,
   ownerAddress?: string,
   network: string = "mainnet",
-  provider?: AgentWalletProvider,
 ): Promise<string> {
   const tronWeb = await getReadonlyTronWeb(network);
-  const owner = ownerAddress || (await getWalletAddress({ network, provider }));
+  const owner = ownerAddress || (await getWalletAddress());
 
   const tokenContract = await tronWeb.contract(TRC20_MIN_ABI as never, tokenAddress);
   const balance = await (

@@ -44,6 +44,16 @@ jest.mock(
   { virtual: true },
 );
 
+jest.mock("@bankofai/agent-wallet", () => {
+  return {
+    WalletFactory: jest.fn(() => ({})),
+    SecureKVStore: class SecureKVStoreMock {},
+    TronWallet: class TronWalletMock {},
+    loadConfig: jest.fn(() => ({ wallets: {} })),
+    saveConfig: jest.fn(),
+  };
+}, { virtual: true });
+
 jest.mock(
   "@sun-protocol/universal-router-sdk",
   () => {

@@ -10,6 +10,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { createServer } from "http";
 import { z } from "zod";
 import { registerSunswapTools } from "./tools";
+import { initWallet } from "./wallet";
 
 async function startServer() {
   console.error("Starting Dynamic OpenAPI MCP Server...");
@@ -92,6 +93,9 @@ async function startServer() {
       console.error(`Failed to register tool ${name}:`, registerError);
     }
   };
+
+  // Initialize global wallet singleton (agent-wallet > local > read-only)
+  await initWallet();
 
   // Register custom tools from src/tools
   registerSunswapTools(registerTool);
@@ -192,7 +196,6 @@ async function startServer() {
             if (invocationError instanceof McpError) {
               throw invocationError;
             }
-
             throw new McpError(
               ErrorCode.InternalError,
               `Internal server error: ${invocationError.message}`,

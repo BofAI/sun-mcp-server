@@ -1,11 +1,11 @@
 export interface NetworkConstants {
-  trx: string;
+  trx: string
 }
 
 export interface SwapConstants extends NetworkConstants {
-  universalRouter: string;
-  permit2: string;
-  routerApiUrl: string;
+  universalRouter: string
+  permit2: string
+  routerApiUrl: string
 }
 
 // ---------------------------------------------------------------------------
@@ -13,42 +13,42 @@ export interface SwapConstants extends NetworkConstants {
 // ---------------------------------------------------------------------------
 
 export const MAINNET: SwapConstants = {
-  universalRouter: "TSJEtPuqHpvSaVnSwvCsngaeBxrGUzp95Q",
-  permit2: "TTJxU3P8rHycAyFY4kVtGNfmnMH4ezcuM9",
-  routerApiUrl: "https://rot.endjgfsv.link",
-  trx: "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
-};
+  universalRouter: 'TSJEtPuqHpvSaVnSwvCsngaeBxrGUzp95Q',
+  permit2: 'TTJxU3P8rHycAyFY4kVtGNfmnMH4ezcuM9',
+  routerApiUrl: 'https://rot.endjgfsv.link',
+  trx: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
+}
 
 export const NILE: SwapConstants = {
-  universalRouter: "TEgq4237arNE7jX74KCDkc1MXdZeWNkGVj",
-  permit2: "TYQuuhGbEMxF7nZxUHV3uHJxAVVAegNU9h",
-  routerApiUrl: "https://tnrouter.endjgfsv.link",
-  trx: "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
-};
+  universalRouter: 'TEgq4237arNE7jX74KCDkc1MXdZeWNkGVj',
+  permit2: 'TYQuuhGbEMxF7nZxUHV3uHJxAVVAegNU9h',
+  routerApiUrl: 'https://tnrouter.endjgfsv.link',
+  trx: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
+}
 
 export const SHASTA: NetworkConstants = {
-  trx: "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
-};
+  trx: 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb',
+}
 
 // ---------------------------------------------------------------------------
 // Native TRX and Wrapped TRX (for V2 pair lookups: pool is WTRX–Token)
 // ---------------------------------------------------------------------------
 
 /** Native TRX address (same on mainnet/Nile). Use this to trigger addLiquidityETH/removeLiquidityETH. */
-export const TRX_ADDRESS = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
+export const TRX_ADDRESS = 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb'
 
-export const WTRX_MAINNET = "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR";
-export const WTRX_NILE = "TYsbWxNnyTgsZaTFaue9hqpxkU3Fkco94a";
+export const WTRX_MAINNET = 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR'
+export const WTRX_NILE = 'TYsbWxNnyTgsZaTFaue9hqpxkU3Fkco94a'
 
 // ---------------------------------------------------------------------------
 // SUNSwap V2 canonical contracts (mainnet + Nile)
 // ---------------------------------------------------------------------------
 
-export const SUNSWAP_V2_MAINNET_FACTORY = "TKWJdrQkqHisa1X8HUdHEfREvTzw4pMAaY";
-export const SUNSWAP_V2_MAINNET_ROUTER = "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax";
+export const SUNSWAP_V2_MAINNET_FACTORY = 'TKWJdrQkqHisa1X8HUdHEfREvTzw4pMAaY'
+export const SUNSWAP_V2_MAINNET_ROUTER = 'TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax'
 
-export const SUNSWAP_V2_NILE_FACTORY = "THomLGMLhAjMecQf9FQjbZ8a1RtwsZLrGE";
-export const SUNSWAP_V2_NILE_ROUTER = "TMn1qrmYUMSTXo9babrJLzepKZoPC7M6Sy";
+export const SUNSWAP_V2_NILE_FACTORY = 'THomLGMLhAjMecQf9FQjbZ8a1RtwsZLrGE'
+export const SUNSWAP_V2_NILE_ROUTER = 'TMn1qrmYUMSTXo9babrJLzepKZoPC7M6Sy'
 
 // ---------------------------------------------------------------------------
 // SUNSwap V3 canonical contracts (mainnet + Nile)
@@ -106,30 +106,30 @@ export const SUNPUMP_WTRX = "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR";
 export const TRC20_MIN_ABI = [
   {
     inputs: [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
+      { name: 'owner', type: 'address' },
+      { name: 'spender', type: 'address' },
     ],
-    name: "allowance",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    inputs: [{ name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
+    inputs: [{ name: 'account', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     inputs: [
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint256" },
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
     ],
-    name: "approve",
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable',
+    type: 'function',
   },
   {
     inputs: [
@@ -153,7 +153,7 @@ export const SUNSWAP_V2_FACTORY_MIN_ABI = [
     stateMutability: "view",
     type: "function",
   },
-];
+]
 
 // Minimal V3 NonfungiblePositionManager ABI for mint/increase/decrease/collect/positions.
 // Avoids fetching the full on-chain ABI which contains types TronWeb v6 cannot parse.
@@ -333,38 +333,38 @@ export const SUNSWAP_V2_PAIR_MIN_ABI = [
   {
     constant: true,
     inputs: [],
-    name: "getReserves",
+    name: 'getReserves',
     outputs: [
-      { name: "_reserve0", type: "uint112" },
-      { name: "_reserve1", type: "uint112" },
-      { name: "_blockTimestampLast", type: "uint32" },
+      { name: '_reserve0', type: 'uint112' },
+      { name: '_reserve1', type: 'uint112' },
+      { name: '_blockTimestampLast', type: 'uint32' },
     ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     constant: true,
     inputs: [],
-    name: "token0",
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'token0',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     constant: true,
     inputs: [],
-    name: "token1",
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'token1',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     constant: true,
     inputs: [],
-    name: "totalSupply",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
   },
 ];
 

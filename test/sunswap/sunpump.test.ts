@@ -33,7 +33,7 @@ jest.mock("../../src/sunswap/contracts", () => ({
 }));
 
 // Mock the wallet module
-jest.mock("../../src/sunswap/wallet", () => ({
+jest.mock("../../src/wallet", () => ({
   getWalletAddress: jest.fn().mockResolvedValue("TTestWalletAddress123456789012345"),
 }));
 

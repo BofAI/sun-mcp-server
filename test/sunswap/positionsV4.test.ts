@@ -6,7 +6,7 @@ import {
 } from "../../src/sunswap/constants";
 
 // Mock the wallet module to avoid ESM module issues
-jest.mock("../../src/sunswap/wallet", () => ({
+jest.mock("../../src/wallet", () => ({
   getWalletAddress: jest.fn().mockResolvedValue("TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"),
   isLocalWalletConfigured: jest.fn().mockReturnValue(false),
   getWallet: jest.fn(),
