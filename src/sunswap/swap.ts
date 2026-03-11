@@ -7,7 +7,13 @@ import {
 import { AllowanceTransfer, type PermitSingleWithSignature } from "@sun-protocol/permit2-sdk";
 import { getWallet, type WalletContext } from "./wallet";
 import { signAndBroadcastContractTx, buildRawContractTx } from "./contracts";
-import { MAINNET, NILE, type SwapConstants } from "./constants";
+import { MAINNET, NILE, TRX_ADDRESS, type SwapConstants } from "./constants";
+import {
+  getTokenState,
+  SunPumpTokenState,
+  buyToken as sunpumpBuy,
+  sellToken as sunpumpSell,
+} from "./sunpump";
 
 const SWAP_SUPPORTED_NETWORKS: Record<string, SwapConstants> = {
   mainnet: MAINNET,
@@ -119,6 +125,103 @@ export interface SwapResult {
     poolVersions: string[];
     impact: string;
   };
+  source?: "sunpump" | "universal_router";
+}
+
+/**
+ * Execute swap via SunPump bonding curve (for meme tokens in TRADING state).
+ */
+async function executeSunPumpSwap(
+  params: SwapParams,
+  isBuy: boolean,
+  memeToken: string,
+  slippage: number,
+): Promise<SwapResult> {
+  const network = params.network || "mainnet";
+
+  if (isBuy) {
+    // TRX -> MemeToken (buy)
+    const result = await sunpumpBuy({
+      tokenAddress: memeToken,
+      trxAmount: params.amountIn,
+      slippage,
+      network,
+    });
+
+    const txResult = result.txResult as { txid?: string; transaction?: { txID?: string } };
+    const txid = txResult.txid || txResult.transaction?.txID || "unknown";
+
+    return {
+      txid,
+      route: {
+        amountIn: result.trxSpent,
+        amountOut: result.expectedTokens,
+        symbols: ["TRX", "MEME"],
+        poolVersions: ["sunpump"],
+        impact: "N/A",
+      },
+      source: "sunpump",
+    };
+  } else {
+    // MemeToken -> TRX (sell)
+    const result = await sunpumpSell({
+      tokenAddress: memeToken,
+      tokenAmount: params.amountIn,
+      slippage,
+      network,
+    });
+
+    const txResult = result.txResult as { txid?: string; transaction?: { txID?: string } };
+    const txid = txResult.txid || txResult.transaction?.txID || "unknown";
+
+    return {
+      txid,
+      route: {
+        amountIn: result.tokensSold,
+        amountOut: result.expectedTrx,
+        symbols: ["MEME", "TRX"],
+        poolVersions: ["sunpump"],
+        impact: "N/A",
+      },
+      source: "sunpump",
+    };
+  }
+}
+
+/**
+ * Check if this is a TRX-TRC20 pair and the TRC20 token is trading on SunPump.
+ * Returns the TRC20 token address if it's a SunPump trade, null otherwise.
+ */
+async function checkSunPumpTrade(
+  tokenIn: string,
+  tokenOut: string,
+  network: string,
+): Promise<{ isSunPump: boolean; isBuy: boolean; memeToken: string } | null> {
+  const trxAddresses = [TRX_ADDRESS, TRX_ADDRESS.toLowerCase()];
+  const isTokenInTrx = trxAddresses.includes(tokenIn);
+  const isTokenOutTrx = trxAddresses.includes(tokenOut);
+
+  // Must be TRX-TRC20 pair
+  if (!isTokenInTrx && !isTokenOutTrx) {
+    return null;
+  }
+  if (isTokenInTrx && isTokenOutTrx) {
+    return null;
+  }
+
+  const memeToken = isTokenInTrx ? tokenOut : tokenIn;
+  const isBuy = isTokenInTrx; // TRX -> Token is buy, Token -> TRX is sell
+
+  try {
+    const state = await getTokenState(memeToken, network);
+    if (state === SunPumpTokenState.TRADING) {
+      return { isSunPump: true, isBuy, memeToken };
+    }
+  } catch {
+    // Token not on SunPump or query failed, use normal swap
+  }
+
+  return null;
 }
 
 export async function executeSwap(params: SwapParams): Promise<SwapResult> {
@@ -127,6 +230,14 @@ export async function executeSwap(params: SwapParams): Promise<SwapResult> {
   const constants = getSwapConstants(network);
   const testnet = network === "nile";
 
+  // Check if this is a SunPump trade (TRX-MemeToken pair with token in TRADING state)
+  const sunpumpCheck = await checkSunPumpTrade(params.tokenIn, params.tokenOut, network);
+  
+  if (sunpumpCheck?.isSunPump) {
+    return executeSunPumpSwap(params, sunpumpCheck.isBuy, sunpumpCheck.memeToken, slippage);
+  }
+
+  // Normal Universal Router swap flow
   // 1. Get wallet & tronWeb
   const wallet = getWallet({ network });
   if (wallet.type !== "local") {
@@ -218,5 +329,6 @@ export async function executeSwap(params: SwapParams): Promise<SwapResult> {
       poolVersions: targetRoute.poolVersions,
       impact: targetRoute.impact,
     },
+    source: "universal_router",
   };
 }

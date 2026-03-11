@@ -85,6 +85,19 @@ export const PERMIT2_MAINNET = "TTJxU3P8rHycAyFY4kVtGNfmnMH4ezcuM9";
 export const PERMIT2_NILE = "TYQuuhGbEMxF7nZxUHV3uHJxAVVAegNU9h";
 
 // ---------------------------------------------------------------------------
+// SunPump (Meme Token Launchpad) contracts
+// Uses bonding curve mechanism for internal trading before DEX migration
+// ---------------------------------------------------------------------------
+
+/** SunPump main contract (bonding curve router) on mainnet. */
+export const SUNPUMP_MAINNET = "TTfvyrAz86hbZk5iDpKD78pqLGgi8C7AAw";
+/** SunPump main contract on Nile testnet (if available). */
+export const SUNPUMP_NILE = "TLtTyEwqacNKc5CHLunKvxmqLB336R4Lrm"; // Same as mainnet for now
+
+/** WTRX used in SunPump bonding curve. */
+export const SUNPUMP_WTRX = "TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR";
+
+// ---------------------------------------------------------------------------
 // Minimal ABIs used across SUNSwap helpers (V2/V3/V4 + TRC20)
 // ---------------------------------------------------------------------------
 
@@ -352,5 +365,193 @@ export const SUNSWAP_V2_PAIR_MIN_ABI = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// SunPump (Meme Coin Launchpad) ABI
+// Bonding curve buy/sell functions for internal trading
+// ---------------------------------------------------------------------------
+
+export const SUNPUMP_ABI = [
+  // Purchase token with TRX
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "AmountMin", type: "uint256" },
+    ],
+    name: "purchaseToken",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  // Sale token for TRX
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "tokenAmount", type: "uint256" },
+      { name: "AmountMin", type: "uint256" },
+    ],
+    name: "saleToken",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // Get token state (0 = not exist, 1 = trading, 2 = launched)
+  {
+    inputs: [{ name: "token", type: "address" }],
+    name: "getTokenState",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Get price
+  {
+    inputs: [{ name: "token", type: "address" }],
+    name: "getPrice",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Calculate token amount for purchase (given TRX amount)
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "trxAmount", type: "uint256" },
+    ],
+    name: "getTokenAmountByPurchase",
+    outputs: [{ name: "tokenAmount", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Calculate token amount for purchase with fee
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "trxAmount", type: "uint256" },
+    ],
+    name: "getTokenAmountByPurchaseWithFee",
+    outputs: [
+      { name: "tokenAmount", type: "uint256" },
+      { name: "fee", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Calculate TRX amount for sale (given token amount)
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "tokenAmount", type: "uint256" },
+    ],
+    name: "getTrxAmountBySale",
+    outputs: [{ name: "trxAmount", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Calculate TRX amount for sale with fee
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "tokenAmount", type: "uint256" },
+    ],
+    name: "getTrxAmountBySaleWithFee",
+    outputs: [
+      { name: "trxAmount", type: "uint256" },
+      { name: "fee", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Get TRX needed to purchase exact token amount
+  {
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "tokenAmount", type: "uint256" },
+    ],
+    name: "getExactTokenAmountForPurchase",
+    outputs: [{ name: "trxAmount", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Get virtual pool info (reserves and launched status)
+  {
+    inputs: [{ name: "token", type: "address" }],
+    name: "virtualPools",
+    outputs: [
+      { name: "TRXReserve", type: "uint256" },
+      { name: "TokenReserve", type: "uint256" },
+      { name: "launched", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Constants
+  {
+    inputs: [],
+    name: "VIRTUAL_TOKEN_RESERVE_AMOUNT",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "VIRTUAL_TRX_RESERVE_AMOUNT",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "purchaseFee",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "saleFee",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Events
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "token", type: "address" },
+      { indexed: true, name: "buyer", type: "address" },
+      { indexed: false, name: "trxAmount", type: "uint256" },
+      { indexed: false, name: "tokenAmount", type: "uint256" },
+      { indexed: false, name: "fee", type: "uint256" },
+      { indexed: false, name: "tokenReserve", type: "uint256" },
+      { indexed: false, name: "trxReserve", type: "uint256" },
+    ],
+    name: "TokenPurchased",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "token", type: "address" },
+      { indexed: true, name: "seller", type: "address" },
+      { indexed: false, name: "tokenAmount", type: "uint256" },
+      { indexed: false, name: "trxAmount", type: "uint256" },
+      { indexed: false, name: "fee", type: "uint256" },
+      { indexed: false, name: "tokenReserve", type: "uint256" },
+      { indexed: false, name: "trxReserve", type: "uint256" },
+    ],
+    name: "TokenSold",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "token", type: "address" },
+      { indexed: true, name: "creator", type: "address" },
+      { indexed: false, name: "tokenIndex", type: "uint256" },
+    ],
+    name: "TokenCreate",
+    type: "event",
   },
 ];
