@@ -284,6 +284,29 @@ export async function ensureTokenAllowance(params: {
   });
 }
 
+/**
+ * Transfer TRC20 tokens to a destination address.
+ * Used for V4 where tokens need to be transferred to CLPositionManager before calling modifyLiquidities.
+ */
+export async function transferTokenTo(params: {
+  network?: string;
+  tokenAddress: string;
+  to: string;
+  amount: string;
+  provider?: AgentWalletProvider;
+}): Promise<void> {
+  const network = params.network || "mainnet";
+
+  await sendContractTx({
+    address: params.tokenAddress,
+    functionName: "transfer",
+    args: [params.to, params.amount],
+    abi: TRC20_MIN_ABI,
+    network,
+    provider: params.provider,
+  });
+}
+
 export async function getReadonlyTronWeb(network: string): Promise<TronWeb> {
   // Lightweight TronWeb instance for read-only calls.
   const tronwebModule = await import("tronweb");

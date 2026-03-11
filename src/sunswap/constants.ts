@@ -61,7 +61,22 @@ export const SUNSWAP_V3_NILE_FACTORY = "TLJWAScHZ4Qmk1axyKMzrnoYuu2pSLer1F";
 export const SUNSWAP_V3_NILE_POSITION_MANAGER = "TPQzqHbCzQfoVdAV6bLwGDos8Lk2UjXz2R";
 
 // ---------------------------------------------------------------------------
-// Minimal ABIs used across SUNSwap helpers (V2/V3 + TRC20)
+// SUNSwap V4 canonical contracts (mainnet + Nile)
+// CLPositionManager: concentrated liquidity position manager
+// ---------------------------------------------------------------------------
+
+/** V4 CLPositionManager. Replace with deployed address when available. */
+export const SUNSWAP_V4_MAINNET_CL_POSITION_MANAGER = "TC8xQzPHfn5KceZV6s6GmZkBCFWWUoPXs1";
+/** V4 CLPositionManager on Nile. Replace with deployed address when available. */
+export const SUNSWAP_V4_NILE_CL_POSITION_MANAGER = "TMTQ1BYo15aGgZXHcsBWXyae8bVaAdgfLP";
+
+/** V4 PoolManager. Replace with deployed address when available. */
+export const SUNSWAP_V4_MAINNET_POOL_MANAGER = "TVjuTE3V5bMVdpfNhid8kD2v35T2k1u1Br";
+/** V4 PoolManager on Nile. Replace with deployed address when available. */
+export const SUNSWAP_V4_NILE_POOL_MANAGER = "TVivLPeq7FMmTG8Z7HaiBgHTsMwCEcipKT";
+
+// ---------------------------------------------------------------------------
+// Minimal ABIs used across SUNSwap helpers (V2/V3/V4 + TRC20)
 // ---------------------------------------------------------------------------
 
 // Minimal TRC20 ABI (allowance / balanceOf / approve) taken from
@@ -90,6 +105,16 @@ export const TRC20_MIN_ABI = [
       { name: "amount", type: "uint256" },
     ],
     name: "approve",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    name: "transfer",
     outputs: [{ name: "", type: "bool" }],
     stateMutability: "nonpayable",
     type: "function",
@@ -225,6 +250,57 @@ export const SUNSWAP_V3_POSITION_MANAGER_MIN_ABI = [
       { name: "tokensOwed0", type: "uint128" },
       { name: "tokensOwed1", type: "uint128" },
     ],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+
+// Minimal V4 CLPositionManager ABI.
+// Uniswap-style V4 uses modifyLiquidities(bytes, uint256); SUNSWAP may keep V3-style interface.
+// Use V3-style ABI if compatible; otherwise implement modifyLiquidities encoding.
+export const SUNSWAP_V4_CL_POSITION_MANAGER_MIN_ABI = [
+  {
+    inputs: [
+      { name: "unlockData", type: "bytes" },
+      { name: "deadline", type: "uint256" },
+    ],
+    name: "modifyLiquidities",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "getPoolAndPositionInfo",
+    outputs: [
+      {
+        components: [
+          { name: "currency0", type: "address" },
+          { name: "currency1", type: "address" },
+          { name: "fee", type: "uint24" },
+          { name: "tickSpacing", type: "int24" },
+          { name: "hooks", type: "address" },
+        ],
+        name: "poolKey",
+        type: "tuple",
+      },
+      {
+        components: [
+          { name: "tickLower", type: "int24" },
+          { name: "tickUpper", type: "int24" },
+          { name: "liquidity", type: "uint128" },
+        ],
+        name: "info",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "getPositionLiquidity",
+    outputs: [{ name: "liquidity", type: "uint128" }],
     stateMutability: "view",
     type: "function",
   },

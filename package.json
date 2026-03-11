@@ -17,7 +17,11 @@
     "script:test-remove-liquidity": "ts-node scripts/test-remove-liquidity.ts",
     "script:test-v3-mint": "ts-node scripts/test-v3-mint.ts",
     "script:test-v3-decrease": "ts-node scripts/test-v3-decrease.ts",
-    "script:test-v3-collect": "ts-node scripts/test-v3-collect.ts"
+    "script:test-v3-collect": "ts-node scripts/test-v3-collect.ts",
+    "script:test-v4-mint": "ts-node scripts/test-v4-mint.ts",
+    "script:test-v4-increase": "ts-node scripts/test-v4-increase.ts",
+    "script:test-v4-decrease": "ts-node scripts/test-v4-decrease.ts",
+    "script:test-v4-collect": "ts-node scripts/test-v4-collect.ts"
   },
   "bin": {
     "sun-mcp-server": "./bin/sun-mcp-server"
