@@ -14,6 +14,7 @@ import {
   getCLPositionManagerAddress,
   getV4PositionInfo,
 } from "../src/sunswap/positionsV4";
+import { isLocalWalletConfigured } from "../src/sunswap/wallet";
 
 const NETWORK = "nile";
 
@@ -21,13 +22,19 @@ const NETWORK = "nile";
 const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"; // USDT on Nile
 const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK"; // Another token
 const FEE = 500;
+const SLIPPAGE = 0.5; // 0.5%
 
 /** 替换为你实际持有的 V4 position tokenId */
-const TOKEN_ID = "1";
+const TOKEN_ID = "55";
 /** 要移除的 liquidity 数量 */
-const LIQUIDITY = "1000000000";
+const LIQUIDITY = "205051642";
 
 async function main() {
+  if (!isLocalWalletConfigured()) {
+    console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
+    process.exit(1);
+  }
+
   const PM = getCLPositionManagerAddress(NETWORK);
 
   console.log("=== V4 Decrease Liquidity Test ===");
@@ -68,6 +75,7 @@ async function main() {
       token0: TOKEN_0,
       token1: TOKEN_1,
       fee: FEE,
+      slippage: SLIPPAGE,
       // amount0Min / amount1Min omitted → default to 0 (set them for slippage protection)
     });
 

@@ -21,7 +21,11 @@
     "script:test-v4-mint": "ts-node scripts/test-v4-mint.ts",
     "script:test-v4-increase": "ts-node scripts/test-v4-increase.ts",
     "script:test-v4-decrease": "ts-node scripts/test-v4-decrease.ts",
-    "script:test-v4-collect": "ts-node scripts/test-v4-collect.ts"
+    "script:test-v4-collect": "ts-node scripts/test-v4-collect.ts",
+    "test:v4": "jest --testPathPattern=positionsV4",
+    "wallet:setup": "ts-node scripts/setup-local-wallet.ts",
+    "wallet:generate": "ts-node scripts/setup-local-wallet.ts generate",
+    "wallet:show": "ts-node scripts/setup-local-wallet.ts show"
   },
   "bin": {
     "sun-mcp-server": "./bin/sun-mcp-server"

@@ -76,6 +76,15 @@ export const SUNSWAP_V4_MAINNET_POOL_MANAGER = "TVjuTE3V5bMVdpfNhid8kD2v35T2k1u1
 export const SUNSWAP_V4_NILE_POOL_MANAGER = "TVivLPeq7FMmTG8Z7HaiBgHTsMwCEcipKT";
 
 // ---------------------------------------------------------------------------
+// Permit2 contract addresses (shared by Universal Router and V4)
+// ---------------------------------------------------------------------------
+
+/** Permit2 contract on mainnet. */
+export const PERMIT2_MAINNET = "TTJxU3P8rHycAyFY4kVtGNfmnMH4ezcuM9";
+/** Permit2 contract on Nile testnet. */
+export const PERMIT2_NILE = "TYQuuhGbEMxF7nZxUHV3uHJxAVVAegNU9h";
+
+// ---------------------------------------------------------------------------
 // Minimal ABIs used across SUNSwap helpers (V2/V3/V4 + TRC20)
 // ---------------------------------------------------------------------------
 

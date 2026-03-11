@@ -14,13 +14,24 @@ import {
   getCLPositionManagerAddress,
   getV4PositionInfo,
 } from "../src/sunswap/positionsV4";
+import { isLocalWalletConfigured } from "../src/sunswap/wallet";
 
 const NETWORK = "nile";
 
+// 需要替换为你的实际测试代币地址（Nile 测试网）
+const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"; // USDT on Nile
+const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK"; // Another token
+const FEE = 500;
+
 /** 替换为你实际持有的 V4 position tokenId */
-const TOKEN_ID = "1";
+const TOKEN_ID = "56";
 
 async function main() {
+  if (!isLocalWalletConfigured()) {
+    console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
+    process.exit(1);
+  }
+
   const PM = getCLPositionManagerAddress(NETWORK);
 
   console.log("=== V4 Collect Fees Test ===");
@@ -52,12 +63,11 @@ async function main() {
       network: NETWORK,
       positionManagerAddress: PM,
       tokenId: TOKEN_ID,
+      token0: TOKEN_0,
+      token1: TOKEN_1,
+      fee: FEE,
     });
 
-    console.log("Estimated fees:");
-    console.log("  amount0:", result.estimatedFees.amount0);
-    console.log("  amount1:", result.estimatedFees.amount1);
-    console.log("");
     console.log("Collect tx result:");
     console.log(JSON.stringify(result.txResult, null, 2));
   } catch (err: unknown) {
