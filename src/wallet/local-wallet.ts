@@ -6,7 +6,7 @@ import { TronWeb } from 'tronweb'
 import { type TypedDataField } from 'tronweb/lib/esm/utils/typedData'
 import type { Wallet } from './index'
 import { getConfiguredLocalWallet } from './index'
-import { getNetworkConfig } from '../sunswap/chains'
+import { getNetworkConfig } from '@bankofai/sun-kit'
 
 export class LocalWallet implements Wallet {
   readonly type = 'local' as const

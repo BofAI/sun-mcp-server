@@ -9,18 +9,13 @@
  */
 
 import "dotenv/config";
-import {
-  increaseLiquidityV4,
-  getCLPositionManagerAddress,
-  getV4PositionInfo,
-} from "../src/sunswap/positionsV4";
-import { isLocalWalletConfigured, initWallet } from "../src/wallet";
+import { SunKit } from "@bankofai/sun-kit";
+import { isLocalWalletConfigured, initWallet, getWallet } from "../src/wallet";
 
 const NETWORK = "nile";
 
-// 需要替换为你的实际测试代币地址（Nile 测试网）
-const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"; // USDT on Nile
-const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK"; // Another token
+const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
+const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
 const FEE = 500;
 const SLIPPAGE = 0.5; // 0.5%
 
@@ -33,10 +28,11 @@ async function main() {
     process.exit(1);
   }
 
-  // Initialize wallet singleton
   await initWallet();
+  const wallet = getWallet();
+  const kit = new SunKit({ wallet, network: NETWORK });
 
-  const PM = getCLPositionManagerAddress(NETWORK);
+  const PM = SunKit.getCLPositionManagerAddress(NETWORK);
 
   console.log("=== V4 Increase Liquidity Test ===");
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);
@@ -46,10 +42,9 @@ async function main() {
   console.log("token0:", TOKEN_0, "token1:", TOKEN_1, "fee:", FEE);
   console.log("");
 
-  // 1) Read position info first (optional)
   console.log("--- Step 1: Read position info ---");
   try {
-    const posInfo = await getV4PositionInfo(NETWORK, PM, TOKEN_ID);
+    const posInfo = await kit.getV4PositionInfo(NETWORK, PM, TOKEN_ID);
     if (posInfo) {
       console.log("Position info:");
       console.log(JSON.stringify(posInfo, null, 2));
@@ -61,28 +56,20 @@ async function main() {
   }
   console.log("");
 
-  // 2) Increase liquidity
   console.log("--- Step 2: Increase liquidity ---");
   try {
-    const result = await increaseLiquidityV4({
+    const result = await kit.increaseLiquidityV4({
       network: NETWORK,
-      positionManagerAddress: PM,
       tokenId: TOKEN_ID,
       token0: TOKEN_0,
       token1: TOKEN_1,
       fee: FEE,
-      // tickLower / tickUpper omitted → read from position
-      amount0Desired: "5000000", // only token0
-      // amount1Desired omitted → auto-computed
+      amount0Desired: "5000000",
       slippage: SLIPPAGE,
     });
 
     console.log("Increase result:");
     console.log(JSON.stringify(result, null, 2));
-    console.log("");
-    if (result.computedAmounts) {
-      console.log("Computed amounts:", result.computedAmounts);
-    }
   } catch (err: unknown) {
     const error = err as Error;
     console.error("Error name:", error?.name);

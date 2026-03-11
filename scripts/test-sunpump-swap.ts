@@ -10,37 +10,30 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { executeSwap } from "../src/sunswap/swap";
-import { getSunPumpTokenInfo, SunPumpTokenState } from "../src/sunswap/sunpump";
-import { isLocalWalletConfigured, getWalletAddress, initWallet } from "../src/wallet";
-import { TRX_ADDRESS } from "../src/sunswap/constants";
+import { SunKit, SunPumpTokenState } from "@bankofai/sun-kit";
+import { isLocalWalletConfigured, getWalletAddress, initWallet, getWallet } from "../src/wallet";
 
-// ===================== Configuration =====================
+const TRX_ADDRESS = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
+
 const NETWORK = "nile";
-// Replace with actual SunPump meme token address
 const MEME_TOKEN = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
-// Amount of TRX to spend on buy (in sun, 1 TRX = 1,000,000 sun)
 const BUY_TRX_AMOUNT = "1000000"; // 1 TRX
-// Amount of tokens to sell (in smallest units, e.g. 18 decimals)
-const SELL_TOKEN_AMOUNT = "1000000"; // 1000 tokens (if 18 decimals)
-// Slippage tolerance
+const SELL_TOKEN_AMOUNT = "1000000";
 const SLIPPAGE = 0.05; // 5%
-// Test mode: "buy" | "sell" | "both"
 const TEST_MODE: "buy" | "sell" | "both" = "sell";
-// =========================================================
 
 async function main() {
   console.log("=== SunPump Swap Integration Test ===\n");
 
-  // Check wallet configuration
   if (!isLocalWalletConfigured()) {
     console.error("Error: No wallet configured.");
     console.error("Run: npm run wallet:setup");
     process.exit(1);
   }
 
-  // Initialize wallet singleton
   await initWallet();
+  const wallet = getWallet();
+  const kit = new SunKit({ wallet, network: NETWORK });
 
   const walletAddress = await getWalletAddress();
   console.log(`Wallet: ${walletAddress}`);
@@ -48,10 +41,9 @@ async function main() {
   console.log(`Meme Token: ${MEME_TOKEN}`);
   console.log(`Test Mode: ${TEST_MODE}\n`);
 
-  // 1. Check token status
   console.log("--- Step 1: Checking Token Status ---");
   try {
-    const tokenInfo = await getSunPumpTokenInfo(MEME_TOKEN, NETWORK);
+    const tokenInfo = await kit.getSunPumpTokenInfo(MEME_TOKEN, NETWORK);
     console.log("Token Info:");
     console.log(`  State: ${tokenInfo.state} (0=not exist, 1=trading, 2=launched)`);
     console.log(`  Price: ${tokenInfo.price}`);
@@ -72,7 +64,6 @@ async function main() {
     process.exit(1);
   }
 
-  // 2. Test Buy (TRX -> MemeToken)
   if (TEST_MODE === "buy" || TEST_MODE === "both") {
     console.log("--- Step 2: Testing Buy (TRX -> MemeToken) ---");
     console.log(`Buying with ${Number(BUY_TRX_AMOUNT) / 1e6} TRX...`);
@@ -82,7 +73,7 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
     try {
-      const buyResult = await executeSwap({
+      const buyResult = await kit.swap({
         tokenIn: TRX_ADDRESS,
         tokenOut: MEME_TOKEN,
         amountIn: BUY_TRX_AMOUNT,
@@ -92,7 +83,6 @@ async function main() {
 
       console.log("Buy Result:");
       console.log(`  TX ID: ${buyResult.txid}`);
-      console.log(`  Source: ${buyResult.source}`);
       console.log(`  Amount In: ${buyResult.route.amountIn}`);
       console.log(`  Amount Out: ${buyResult.route.amountOut}`);
       console.log(`  Pool Versions: ${buyResult.route.poolVersions.join(", ")}`);
@@ -105,19 +95,15 @@ async function main() {
     }
   }
 
-  // 3. Test Sell (MemeToken -> TRX)
   if (TEST_MODE === "sell" || TEST_MODE === "both") {
     console.log("--- Step 3: Testing Sell (MemeToken -> TRX) ---");
 
-    // If we just bought, wait a bit
     if (TEST_MODE === "both") {
       console.log("Waiting 5 seconds for buy tx to confirm...\n");
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
 
-    // Get current token balance
-    const { getMemeTokenBalance } = await import("../src/sunswap/sunpump");
-    const balance = await getMemeTokenBalance(MEME_TOKEN, walletAddress, NETWORK);
+    const balance = await kit.getMemeTokenBalance(MEME_TOKEN, walletAddress, NETWORK);
     console.log(`Current Token Balance: ${balance}`);
     console.log(`Sell Amount: ${SELL_TOKEN_AMOUNT}`);
 
@@ -132,7 +118,7 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
     try {
-      const sellResult = await executeSwap({
+      const sellResult = await kit.swap({
         tokenIn: MEME_TOKEN,
         tokenOut: TRX_ADDRESS,
         amountIn: SELL_TOKEN_AMOUNT,
@@ -142,7 +128,6 @@ async function main() {
 
       console.log("Sell Result:");
       console.log(`  TX ID: ${sellResult.txid}`);
-      console.log(`  Source: ${sellResult.source}`);
       console.log(`  Amount In: ${sellResult.route.amountIn}`);
       console.log(`  Amount Out: ${sellResult.route.amountOut}`);
       console.log(`  Pool Versions: ${sellResult.route.poolVersions.join(", ")}`);

@@ -5,7 +5,7 @@
 import type { TronWeb } from 'tronweb'
 import type { Wallet } from './index'
 import { getOwnerAddress, buildSignBroadcast, signMessageWithWallet, signTypedDataWithWallet } from './agent-wallet'
-import { getReadonlyTronWeb } from './tronweb'
+import { createReadonlyTronWeb } from '@bankofai/sun-kit'
 
 export class AgentWalletAdapter implements Wallet {
   readonly type = 'agent-wallet' as const
@@ -15,7 +15,7 @@ export class AgentWalletAdapter implements Wallet {
   }
 
   async getTronWeb(network = 'mainnet'): Promise<TronWeb> {
-    const tronWeb = await getReadonlyTronWeb(network)
+    const tronWeb = await createReadonlyTronWeb(network)
 
     // Set defaultAddress to the agent-wallet owner so triggerSmartContract
     // uses the correct issuer address.

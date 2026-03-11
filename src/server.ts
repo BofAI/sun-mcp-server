@@ -1,16 +1,17 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { config } from "./config";
-import { getProcessedOpenApi } from "./openapiProcessor";
-import { mapOpenApiToMcpTools } from "./mcpMapper";
-import { executeApiCall } from "./apiClient";
-import type { MappedTool, RegisterToolFn } from "./types";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { createServer } from "http";
-import { z } from "zod";
-import { registerSunswapTools } from "./tools";
-import { initWallet } from "./wallet";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { config } from './config';
+import { getProcessedOpenApi } from './openapiProcessor';
+import { mapOpenApiToMcpTools } from './mcpMapper';
+import { executeApiCall } from './apiClient';
+import type { MappedTool, RegisterToolFn } from './types';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { createServer } from 'http';
+import { z } from 'zod';
+import { registerSunswapTools } from './tools';
+import { initWallet, isWalletConfigured, getWallet } from './wallet';
+import { SunKit, SunAPI } from '@bankofai/sun-kit';
 
 async function startServer() {
   console.error("Starting Dynamic OpenAPI MCP Server...");
@@ -55,7 +56,6 @@ async function startServer() {
 
   const primarySpec = openapiSpecs[0];
 
-  // Construct the server with metadata from OpenAPI spec
   const server = new McpServer({
     name:
       config.specConfigs.length > 1
@@ -68,7 +68,6 @@ async function startServer() {
     console.error(`API Description: ${primarySpec.info.description}`);
   }
 
-  // Register each tool with the server
   const registeredToolNames = new Set<string>();
   const registerTool: RegisterToolFn = (name, definition, handler) => {
     if (registeredToolNames.has(name)) {
@@ -97,19 +96,26 @@ async function startServer() {
   // Initialize global wallet singleton (agent-wallet > local > read-only)
   await initWallet();
 
+  // Create SunKit / SunAPI instances
+  const api = new SunAPI();
+  const kit = new SunKit({
+    wallet: isWalletConfigured() ? getWallet() : undefined,
+    network: process.env.TRON_NETWORK || 'mainnet',
+    tronGridApiKey: process.env.TRON_GRID_API_KEY,
+    rpcUrl: process.env.TRON_RPC_URL,
+  });
+
   // Register custom tools from src/tools
-  registerSunswapTools(registerTool);
+  registerSunswapTools(registerTool, { api, kit });
 
   for (const tool of mappedTools) {
     const { mcpToolDefinition, apiCallDetails } = tool;
     console.error(`Registering MCP tool: ${mcpToolDefinition.name}`);
 
     try {
-      // Convert JSON Schema properties to zod schema
       const params: any = {};
 
       if (mcpToolDefinition.inputSchema && mcpToolDefinition.inputSchema.properties) {
-        // Loop through all properties and create appropriate Zod schemas based on data type
         for (const [propName, propSchema] of Object.entries(
           mcpToolDefinition.inputSchema.properties,
         )) {
@@ -118,13 +124,11 @@ async function startServer() {
           const description = (propSchema.description as string) || `Parameter: ${propName}`;
           const required = mcpToolDefinition.inputSchema.required?.includes(propName) || false;
 
-          // Map JSON Schema types to Zod schema types
           let zodSchema;
           const schemaType = Array.isArray(propSchema.type)
-            ? propSchema.type[0] // If type is an array (for nullable union types), use first type
+            ? propSchema.type[0]
             : propSchema.type;
 
-          // Handle different types with proper Zod schemas
           switch (schemaType) {
             case "integer":
               zodSchema = z.number().int().describe(description);
@@ -136,11 +140,9 @@ async function startServer() {
               zodSchema = z.boolean().describe(description);
               break;
             case "object":
-              // For objects, create a more permissive schema
               zodSchema = z.object({}).passthrough().describe(description);
               break;
             case "array":
-              // For arrays, allow any array content
               zodSchema = z.array(z.any()).describe(description);
               break;
             case "string":
@@ -149,12 +151,10 @@ async function startServer() {
               break;
           }
 
-          // Make it optional if not required
           params[propName] = required ? zodSchema : zodSchema.optional();
         }
       }
 
-      // Register the tool using unified registration entry point
       registerTool(
         mcpToolDefinition.name,
         {
@@ -178,7 +178,6 @@ async function startServer() {
                 ],
               };
             } else {
-              // Map API errors to MCP errors
               let errorCode = ErrorCode.InternalError;
               let errorMessage = result.error || `API Error ${result.statusCode}`;
 
@@ -213,7 +212,6 @@ async function startServer() {
   try {
     if (config.transport === "streamable-http") {
       const transport = new StreamableHTTPServerTransport({
-        // Stateless mode keeps the setup simple and client-compatible.
         sessionIdGenerator: undefined,
       });
       await server.connect(transport);
@@ -246,7 +244,6 @@ async function startServer() {
       return;
     }
 
-    // Default transport is stdio for local MCP clients.
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error(`MCP Server started and ready for connections`);
@@ -258,7 +255,6 @@ async function startServer() {
 
 export { startServer };
 
-// Only auto-start if this is the main module
 if (require.main === module) {
   startServer().catch((error) => {
     console.error("Unhandled error during server startup:", error);

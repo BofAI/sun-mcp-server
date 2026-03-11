@@ -3,44 +3,12 @@ import {
   SUNSWAP_V4_NILE_CL_POSITION_MANAGER,
   SUNSWAP_V4_MAINNET_POOL_MANAGER,
   SUNSWAP_V4_NILE_POOL_MANAGER,
-} from "../../src/sunswap/constants";
+  SunKit,
+} from "@bankofai/sun-kit";
+import { FEE_TICK_SPACING } from "@bankofai/sun-kit/dist/kit/v3-math";
 
-// Mock the wallet module to avoid ESM module issues
-jest.mock("../../src/wallet", () => ({
-  getWalletAddress: jest.fn().mockResolvedValue("TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"),
-  isLocalWalletConfigured: jest.fn().mockReturnValue(false),
-  getWallet: jest.fn(),
-  getConfiguredLocalWallet: jest.fn(),
-}));
-
-// Mock contracts module
-jest.mock("../../src/sunswap/contracts", () => ({
-  getReadonlyTronWeb: jest.fn().mockResolvedValue({
-    address: {
-      toHex: (addr: string) => {
-        if (addr === "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf") return "41e552f6487585c2b58bc2c9bb4492bc1f17132cd0";
-        if (addr === "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK") return "414d1c0b5a5c7b1e91f0a5c5a9b5c5d5e5f5a5b5c5";
-        return "41" + addr.slice(1);
-      },
-    },
-    transactionBuilder: {
-      triggerConstantContract: jest.fn(),
-    },
-    utils: {
-      abi: {
-        decodeParams: jest.fn(),
-      },
-    },
-    contract: jest.fn(),
-  }),
-  sendContractTx: jest.fn().mockResolvedValue({ txid: "mock-txid" }),
-  transferTokenTo: jest.fn().mockResolvedValue({ txid: "mock-transfer-txid" }),
-}));
-
-import {
-  getCLPositionManagerAddress,
-  getPoolManagerAddress,
-} from "../../src/sunswap/positionsV4";
+const getCLPositionManagerAddress = SunKit.getCLPositionManagerAddress;
+const getPoolManagerAddress = SunKit.getPoolManagerAddress;
 
 describe("positionsV4", () => {
   describe("CLPositionManager addresses", () => {
@@ -182,64 +150,7 @@ describe("positionsV4", () => {
   });
 });
 
-describe("positionsV4 parameter validation", () => {
-  const {
-    increaseLiquidityV4,
-    decreaseLiquidityV4,
-  } = require("../../src/sunswap/positionsV4");
-
-  describe("increaseLiquidityV4", () => {
-    it("throws when token0 is missing", async () => {
-      await expect(
-        increaseLiquidityV4({
-          network: "nile",
-          tokenId: "1",
-          token1: "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK",
-          amount0Desired: "1000000",
-        })
-      ).rejects.toThrow(/token0 and token1 are required/);
-    });
-
-    it("throws when token1 is missing", async () => {
-      await expect(
-        increaseLiquidityV4({
-          network: "nile",
-          tokenId: "1",
-          token0: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
-          amount0Desired: "1000000",
-        })
-      ).rejects.toThrow(/token0 and token1 are required/);
-    });
-  });
-
-  describe("decreaseLiquidityV4", () => {
-    it("throws when token0 is missing", async () => {
-      await expect(
-        decreaseLiquidityV4({
-          network: "nile",
-          tokenId: "1",
-          liquidity: "1000000",
-          token1: "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK",
-        })
-      ).rejects.toThrow(/token0 and token1 are required/);
-    });
-
-    it("throws when token1 is missing", async () => {
-      await expect(
-        decreaseLiquidityV4({
-          network: "nile",
-          tokenId: "1",
-          liquidity: "1000000",
-          token0: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
-        })
-      ).rejects.toThrow(/token0 and token1 are required/);
-    });
-  });
-});
-
 describe("positionsV4 FEE_TICK_SPACING mapping", () => {
-  const { FEE_TICK_SPACING } = require("../../src/sunswap/v3Math");
-
   it("has correct tick spacing for fee 100", () => {
     expect(FEE_TICK_SPACING[100]).toBe(1);
   });

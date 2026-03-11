@@ -9,7 +9,7 @@
 import { WalletFactory, type LocalWalletProvider, type BaseWallet, type Eip712Capable, SecureKVStore, TronWallet, loadConfig, saveConfig } from '@bankofai/agent-wallet'
 import { homedir } from 'os'
 import { join } from 'path'
-import { getReadonlyTronWeb } from './tronweb'
+import { createReadonlyTronWeb } from '@bankofai/sun-kit'
 
 // Default agent-wallet directory (same as agent-wallet CLI)
 const DEFAULT_WALLET_DIR = join(homedir(), '.agent-wallet')
@@ -144,7 +144,7 @@ export async function signTransaction(unsignedTx: Record<string, unknown>): Prom
  */
 export async function buildSignBroadcast(unsignedTx: Record<string, unknown>, network = 'mainnet'): Promise<string> {
   const signedTx = await signTransaction(unsignedTx)
-  const tronWeb = await getReadonlyTronWeb(network)
+  const tronWeb = await createReadonlyTronWeb(network)
   const result = await tronWeb.trx.sendRawTransaction(signedTx as any)
 
   if (result.result) {

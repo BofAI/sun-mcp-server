@@ -1,101 +1,58 @@
 // Mock ESM-only dependencies used by SUNSWAP wallet/contracts so that this
 // test can run in Jest's CommonJS environment without loading their real code.
-jest.mock(
-  "tronweb",
-  () => {
-    return {
-      TronWeb: function TronWebMock() {
-        return {};
-      },
-    };
+jest.mock("tronweb", () => ({
+  TronWeb: function TronWebMock() {
+    return {};
   },
-  { virtual: true },
-);
+}));
 
-jest.mock(
-  "@scure/bip39",
-  () => {
-    return {
-      mnemonicToSeedSync: jest.fn(),
-      generateMnemonic: jest.fn(),
-      validateMnemonic: jest.fn(),
-    };
-  },
-  { virtual: true },
-);
+jest.mock("@scure/bip39", () => ({
+  mnemonicToSeedSync: jest.fn(),
+  generateMnemonic: jest.fn(),
+  validateMnemonic: jest.fn(),
+}));
 
-jest.mock(
-  "@scure/bip39/wordlists/english.js",
-  () => {
-    return {
-      wordlist: [],
-    };
-  },
-  { virtual: true },
-);
+jest.mock("@scure/bip39/wordlists/english.js", () => ({
+  wordlist: [],
+}));
 
-jest.mock(
-  "@scure/bip32",
-  () => {
-    return {
-      HDKey: class HDKeyMock {},
-    };
-  },
-  { virtual: true },
-);
+jest.mock("@scure/bip32", () => ({
+  HDKey: class HDKeyMock {},
+}));
 
-jest.mock("@bankofai/agent-wallet", () => {
+jest.mock("@bankofai/agent-wallet", () => ({
+  WalletFactory: jest.fn(() => ({})),
+  SecureKVStore: class SecureKVStoreMock {},
+  TronWallet: class TronWalletMock {},
+  loadConfig: jest.fn(() => ({ wallets: {} })),
+  saveConfig: jest.fn(),
+}), { virtual: true });
+
+jest.mock("@sun-protocol/universal-router-sdk", () => {
+  class TradePlannerMock {
+    commands: string;
+    inputs: any[];
+    constructor() {
+      this.commands = "0x";
+      this.inputs = [];
+    }
+    encode() {}
+  }
   return {
-    WalletFactory: jest.fn(() => ({})),
-    SecureKVStore: class SecureKVStoreMock {},
-    TronWallet: class TronWalletMock {},
-    loadConfig: jest.fn(() => ({ wallets: {} })),
-    saveConfig: jest.fn(),
+    TradePlanner: TradePlannerMock,
+    parseRouteAPIResponse: jest.fn(() => ({})),
   };
-}, { virtual: true });
+});
 
-jest.mock(
-  "@sun-protocol/universal-router-sdk",
-  () => {
-    class TradePlannerMock {
-      commands: string;
-      inputs: any[];
-
-      constructor() {
-        this.commands = "0x";
-        this.inputs = [];
-      }
-      encode() {
-        // no-op
-      }
+jest.mock("@sun-protocol/permit2-sdk", () => {
+  class AllowanceTransferMock {
+    constructor() {}
+    async generatePermitSignature() {
+      return {};
     }
-
-    return {
-      TradePlanner: TradePlannerMock,
-      parseRouteAPIResponse: jest.fn(() => ({})),
-    };
-  },
-  { virtual: true },
-);
-
-jest.mock(
-  "@sun-protocol/permit2-sdk",
-  () => {
-    class AllowanceTransferMock {
-      constructor() {
-        // no-op
-      }
-      async generatePermitSignature() {
-        return {};
-      }
-    }
-
-    return {
-      AllowanceTransfer: AllowanceTransferMock,
-    };
-  },
-  { virtual: true },
-);
+  }
+  return { AllowanceTransfer: AllowanceTransferMock };
+});
 
 import { registerSunswapTools } from "../../src/tools/sunswap";
 
@@ -107,18 +64,19 @@ describe("sunswap tool registration", () => {
       names.push(name);
     };
 
-    registerSunswapTools(registerTool);
+    const mockDeps = { api: {} as any, kit: {} as any };
+    registerSunswapTools(registerTool, mockDeps);
 
     const uniqueNames = new Set(names);
     expect(uniqueNames.size).toBe(names.length);
 
     const expected = [
       "sunswap_get_wallet_address",
+      "sunswap_v3_collect",
       "sunswap_get_balances",
       "sunswap_quote_exact_input",
       "sunswap_read_contract",
       "sunswap_swap_exact_input",
-      "sunswap_swap",
       "sunswap_get_token_price",
       "sunswap_v2_add_liquidity",
       "sunswap_v2_remove_liquidity",
@@ -126,6 +84,13 @@ describe("sunswap tool registration", () => {
       "sunswap_v3_increase_liquidity",
       "sunswap_v3_decrease_liquidity",
       "sunswap_send_contract",
+      "sunswap_v4_mint_position",
+      "sunswap_v4_increase_liquidity",
+      "sunswap_v4_decrease_liquidity",
+      "sunswap_v4_collect",
+      "sunswap_list_wallets",
+      "sunswap_select_wallet",
+      "sunswap_swap",
     ];
 
     for (const name of expected) {

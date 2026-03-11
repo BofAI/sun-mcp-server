@@ -26,8 +26,8 @@ const mockReadonlyTronWeb = {
   trx: {},
 };
 
-jest.mock("../../src/wallet/tronweb", () => ({
-  getReadonlyTronWeb: jest.fn(async () => mockReadonlyTronWeb),
+jest.mock("@bankofai/sun-kit", () => ({
+  createReadonlyTronWeb: jest.fn(async () => mockReadonlyTronWeb),
 }));
 
 jest.mock("tronweb", () => ({
@@ -89,22 +89,22 @@ describe("AgentWalletAdapter", () => {
       expect(mockReadonlyTronWeb.defaultAddress.base58).toBeTruthy();
     });
 
-    it("calls getReadonlyTronWeb with the requested network", async () => {
-      const { getReadonlyTronWeb } = require("../../src/wallet/tronweb");
+    it("calls createReadonlyTronWeb with the requested network", async () => {
+      const { createReadonlyTronWeb } = require("@bankofai/sun-kit");
       const adapter = new AgentWalletAdapter();
 
       await adapter.getTronWeb("nile");
 
-      expect(getReadonlyTronWeb).toHaveBeenCalledWith("nile");
+      expect(createReadonlyTronWeb).toHaveBeenCalledWith("nile");
     });
 
     it("defaults to mainnet", async () => {
-      const { getReadonlyTronWeb } = require("../../src/wallet/tronweb");
+      const { createReadonlyTronWeb } = require("@bankofai/sun-kit");
       const adapter = new AgentWalletAdapter();
 
       await adapter.getTronWeb();
 
-      expect(getReadonlyTronWeb).toHaveBeenCalledWith("mainnet");
+      expect(createReadonlyTronWeb).toHaveBeenCalledWith("mainnet");
     });
   });
 

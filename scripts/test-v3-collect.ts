@@ -9,8 +9,9 @@
  */
 
 import "dotenv/config";
-import { collectPositionV3 } from "../src/sunswap/positionsV3";
-import { SUNSWAP_V3_NILE_POSITION_MANAGER } from "../src/sunswap/constants";
+import { SunKit } from "@bankofai/sun-kit";
+import { SUNSWAP_V3_NILE_POSITION_MANAGER } from "@bankofai/sun-kit";
+import { isLocalWalletConfigured, initWallet, getWallet } from "../src/wallet";
 
 const NETWORK = "nile";
 const PM = SUNSWAP_V3_NILE_POSITION_MANAGER;
@@ -19,6 +20,15 @@ const PM = SUNSWAP_V3_NILE_POSITION_MANAGER;
 const TOKEN_ID = "1";
 
 async function main() {
+  if (!isLocalWalletConfigured()) {
+    console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
+    process.exit(1);
+  }
+
+  await initWallet();
+  const wallet = getWallet();
+  const kit = new SunKit({ wallet, network: NETWORK });
+
   console.log("=== V3 Collect Fees Test ===");
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);
   console.log("network:", NETWORK);
@@ -27,7 +37,7 @@ async function main() {
   console.log("");
 
   try {
-    const result = await collectPositionV3({
+    const result = await kit.collectPositionV3({
       network: NETWORK,
       positionManagerAddress: PM,
       tokenId: TOKEN_ID,

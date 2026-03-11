@@ -8,16 +8,8 @@
  * global singleton based on environment variables.
  */
 
-import type { TronWeb } from 'tronweb'
-
-export interface Wallet {
-  readonly type: 'local' | 'agent-wallet'
-  getAddress(): Promise<string>
-  getTronWeb(network?: string): Promise<TronWeb>
-  signAndBroadcast(unsignedTx: Record<string, unknown>, network?: string): Promise<{ result: boolean; txid: string }>
-  signMessage(message: string): Promise<string>
-  signTypedData(primaryType: string, domain: Record<string, unknown>, types: Record<string, unknown>, message: Record<string, unknown>): Promise<string>
-}
+import type { Wallet } from '@bankofai/sun-kit'
+export type { Wallet }
 
 // ---------------------------------------------------------------------------
 // Local wallet config helpers (moved from sunswap/wallet.ts)

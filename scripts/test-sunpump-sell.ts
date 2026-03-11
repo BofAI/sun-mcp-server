@@ -12,36 +12,26 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import {
-  getSunPumpTokenInfo,
-  quoteSell,
-  sellToken,
-  getMemeTokenBalance,
-} from "../src/sunswap/sunpump";
-import { isLocalWalletConfigured, getWalletAddress, initWallet } from "../src/wallet";
+import { SunKit } from "@bankofai/sun-kit";
+import { isLocalWalletConfigured, getWalletAddress, initWallet, getWallet } from "../src/wallet";
 
-// ===================== Configuration =====================
 const NETWORK = "nile";
-// Replace with actual SunPump meme token address you own
 const TOKEN_ADDRESS = "TAsJEbT9URv9TCZukeuuhG21tywNzvn6P5";
-// Percentage of balance to sell (1-100)
-// Note: Selling too few tokens may result in TRX amount < fee, causing REVERT
 const SELL_PERCENTAGE = 10; // Sell 10% of balance
 const SLIPPAGE = 0.05; // 5%
-// =========================================================
 
 async function main() {
   console.log("=== SunPump Sell Test ===\n");
 
-  // Check wallet configuration
   if (!isLocalWalletConfigured()) {
     console.error("Error: No wallet configured.");
     console.error("Run: npm run wallet:setup");
     process.exit(1);
   }
 
-  // Initialize wallet singleton
   await initWallet();
+  const wallet = getWallet();
+  const kit = new SunKit({ wallet, network: NETWORK });
 
   const walletAddress = await getWalletAddress();
   console.log(`Wallet: ${walletAddress}`);
@@ -49,10 +39,9 @@ async function main() {
   console.log(`Token: ${TOKEN_ADDRESS}`);
   console.log(`Sell Percentage: ${SELL_PERCENTAGE}%\n`);
 
-  // 1. Get token info
   console.log("--- Step 1: Getting Token Info ---");
   try {
-    const tokenInfo = await getSunPumpTokenInfo(TOKEN_ADDRESS, NETWORK);
+    const tokenInfo = await kit.getSunPumpTokenInfo(TOKEN_ADDRESS, NETWORK);
     console.log("Token Info:");
     console.log(`  State: ${tokenInfo.state} (0=not exist, 1=trading, 2=launched)`);
     console.log(`  Price: ${tokenInfo.price}`);
@@ -73,12 +62,11 @@ async function main() {
     process.exit(1);
   }
 
-  // 2. Check current balance and calculate sell amount
   console.log("--- Step 2: Current Token Balance ---");
   let currentBalance: string;
   let tokenAmount: string;
   try {
-    currentBalance = await getMemeTokenBalance(TOKEN_ADDRESS, walletAddress, NETWORK);
+    currentBalance = await kit.getMemeTokenBalance(TOKEN_ADDRESS, walletAddress, NETWORK);
     console.log(`Current Balance: ${currentBalance}`);
 
     if (BigInt(currentBalance) === 0n) {
@@ -86,7 +74,6 @@ async function main() {
       process.exit(1);
     }
 
-    // Calculate amount to sell based on percentage
     tokenAmount = ((BigInt(currentBalance) * BigInt(SELL_PERCENTAGE)) / 100n).toString();
     console.log(`Amount to Sell (${SELL_PERCENTAGE}%): ${tokenAmount}\n`);
   } catch (error) {
@@ -94,10 +81,9 @@ async function main() {
     process.exit(1);
   }
 
-  // 3. Get quote
   console.log("--- Step 3: Getting Quote ---");
   try {
-    const quote = await quoteSell(TOKEN_ADDRESS, tokenAmount, NETWORK);
+    const quote = await kit.sunpumpQuoteSell(TOKEN_ADDRESS, tokenAmount!, NETWORK);
     console.log("Quote:");
     console.log(`  Expected TRX: ${Number(quote.trxAmount) / 1e6} TRX`);
     console.log(`  Fee: ${Number(quote.fee) / 1e6} TRX\n`);
@@ -107,7 +93,6 @@ async function main() {
     process.exit(1);
   }
 
-  // 4. Execute sell
   console.log("--- Step 4: Executing Sell ---");
   console.log("WARNING: This will sell your tokens. Press Ctrl+C to cancel.");
   console.log("Waiting 5 seconds...\n");
@@ -115,9 +100,9 @@ async function main() {
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   try {
-    const result = await sellToken({
+    const result = await kit.sunpumpSell({
       tokenAddress: TOKEN_ADDRESS,
-      tokenAmount: tokenAmount,
+      tokenAmount: tokenAmount!,
       slippage: SLIPPAGE,
       network: NETWORK,
     });
@@ -132,13 +117,12 @@ async function main() {
     process.exit(1);
   }
 
-  // 5. Check new balance
   console.log("--- Step 5: New Token Balance ---");
   await new Promise((resolve) => setTimeout(resolve, 3000));
   try {
-    const newBalance = await getMemeTokenBalance(TOKEN_ADDRESS, walletAddress, NETWORK);
+    const newBalance = await kit.getMemeTokenBalance(TOKEN_ADDRESS, walletAddress, NETWORK);
     console.log(`New Balance: ${newBalance}`);
-    console.log(`Tokens Sold: ${BigInt(currentBalance) - BigInt(newBalance)}\n`);
+    console.log(`Tokens Sold: ${BigInt(currentBalance!) - BigInt(newBalance)}\n`);
   } catch (error) {
     console.error("Failed to get new balance:", error);
   }

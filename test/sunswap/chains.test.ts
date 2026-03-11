@@ -1,4 +1,4 @@
-import { getNetworkConfig, TronNetwork } from "../../src/sunswap/chains";
+import { getNetworkConfig, TronNetwork } from "@bankofai/sun-kit";
 
 describe("sunswap chains config", () => {
   it("returns mainnet config as default", () => {
@@ -26,17 +26,12 @@ describe("sunswap chains config", () => {
     expect(testnet.fullNode).toBe(nile.fullNode);
   });
 
-  it("honours TRON_RPC_URL override", () => {
-    const original = process.env.TRON_RPC_URL;
-    process.env.TRON_RPC_URL = "https://custom-rpc.tron.local";
-
-    const cfg = getNetworkConfig();
+  it("honours rpcOverride parameter", () => {
+    const cfg = getNetworkConfig("mainnet", "https://custom-rpc.tron.local");
 
     expect(cfg.fullNode).toBe("https://custom-rpc.tron.local");
     expect(cfg.solidityNode).toBe("https://custom-rpc.tron.local");
     expect(cfg.eventServer).toBe("https://custom-rpc.tron.local");
-
-    process.env.TRON_RPC_URL = original;
   });
 
   it("throws on unsupported network", () => {

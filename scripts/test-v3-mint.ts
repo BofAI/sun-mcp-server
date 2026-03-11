@@ -9,17 +9,26 @@
  */
 
 import "dotenv/config";
-import { mintPositionV3 } from "../src/sunswap/positionsV3";
-import { SUNSWAP_V3_NILE_POSITION_MANAGER } from "../src/sunswap/constants";
-import { getV3PoolInfo } from "../src/sunswap/v3Pool";
+import { SunKit } from "@bankofai/sun-kit";
+import { SUNSWAP_V3_NILE_POSITION_MANAGER } from "@bankofai/sun-kit";
+import { isLocalWalletConfigured, initWallet, getWallet } from "../src/wallet";
 
 const NETWORK = "nile";
 const PM = SUNSWAP_V3_NILE_POSITION_MANAGER;
-const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"; // USDT on Nile
-const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK"; // Another token
+const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
+const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
 const FEE = 500;
 
 async function main() {
+  if (!isLocalWalletConfigured()) {
+    console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
+    process.exit(1);
+  }
+
+  await initWallet();
+  const wallet = getWallet();
+  const kit = new SunKit({ wallet, network: NETWORK });
+
   console.log("=== V3 Mint Position Test ===");
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);
   console.log("network:", NETWORK);
@@ -29,32 +38,15 @@ async function main() {
   console.log("fee:", FEE);
   console.log("");
 
-  // 1) Read pool info first
-  console.log("--- Step 1: Read pool info ---");
-  const pool = await getV3PoolInfo(NETWORK, TOKEN_0, TOKEN_1, FEE);
-  if (!pool) {
-    console.error("Pool not found!");
-    process.exit(1);
-  }
-  console.log("Pool address:", pool.poolAddress);
-  console.log("sqrtPriceX96:", pool.sqrtPriceX96);
-  console.log("currentTick:", pool.tick);
-  console.log("tickSpacing:", pool.tickSpacing);
-  console.log("liquidity:", pool.liquidity);
-  console.log("");
-
-  // 2) Mint with single-sided input + auto ticks
-  console.log("--- Step 2: Mint (single-sided: amount0Desired only, auto ticks) ---");
+  console.log("--- Mint (single-sided: amount0Desired only, auto ticks) ---");
   try {
-    const result = await mintPositionV3({
+    const result = await kit.mintPositionV3({
       network: NETWORK,
       positionManagerAddress: PM,
       token0: TOKEN_0,
       token1: TOKEN_1,
       fee: FEE,
-      // tickLower / tickUpper omitted → auto from currentTick ± 50*tickSpacing
-      amount0Desired: "10000000", // only token0
-      // amount1Desired omitted → auto-computed
+      amount0Desired: "10000000",
     });
 
     console.log("Mint result:");

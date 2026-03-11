@@ -1,29 +1,7 @@
 import { z } from "zod";
 import type { RegisterToolFn } from "../types";
-import {
-  readContract,
-  sendContractTx,
-  type ContractCallParams,
-  type ContractSendParams,
-} from "../sunswap/contracts";
+import type { SunKit, SunAPI } from "@bankofai/sun-kit";
 import { getWalletAddress, isLocalWalletConfigured, getConfiguredLocalWallet } from "../wallet";
-import { getBalances } from "../sunswap/balances";
-import { quoteExactInput, swapExactInput } from "../sunswap/router";
-import { getTokenPrices } from "../sunswap/price";
-import { executeSwap } from "../sunswap/swap";
-import { addLiquidityV2, removeLiquidityV2 } from "../sunswap/liquidityV2";
-import {
-  mintPositionV3,
-  increaseLiquidityV3,
-  decreaseLiquidityV3,
-  collectPositionV3,
-} from "../sunswap/positionsV3";
-import {
-  mintPositionV4,
-  increaseLiquidityV4,
-  decreaseLiquidityV4,
-  collectPositionV4,
-} from "../sunswap/positionsV4";
 import {
   listAgentWallets,
   selectWallet,
@@ -31,7 +9,14 @@ import {
   isAgentWalletConfigured,
 } from "../wallet/agent-wallet";
 
-export function registerSunswapTools(registerTool: RegisterToolFn): void {
+export interface SunswapToolsDeps {
+  api: SunAPI;
+  kit: SunKit;
+}
+
+export function registerSunswapTools(registerTool: RegisterToolFn, deps: SunswapToolsDeps): void {
+  const { api, kit } = deps;
+
   registerTool(
     "sunswap_get_wallet_address",
     {
@@ -115,13 +100,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       recipient?: string;
     }) => {
       try {
-        const result = await collectPositionV3({
-          network: input.network,
-          positionManagerAddress: input.positionManagerAddress,
-          abi: input.abi,
-          tokenId: input.tokenId,
-          recipient: input.recipient,
-        });
+        const result = await kit.collectPositionV3(input);
 
         return {
           content: [
@@ -194,7 +173,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       tokens: { type: "TRX" | "TRC20"; tokenAddress?: string }[];
     }) => {
       try {
-        const result = await getBalances({
+        const result = await kit.getBalances({
           network,
           ownerAddress,
           tokens: tokens.map((t) => ({
@@ -268,7 +247,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       abi?: any[];
     }) => {
       try {
-        const result = await quoteExactInput({
+        const result = await kit.quoteExactInput({
           network: input.network,
           routerAddress: input.routerAddress,
           functionName: input.functionName,
@@ -327,9 +306,15 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         openWorldHint: false,
       },
     },
-    async (input: ContractCallParams & { network?: string }) => {
+    async (input: {
+      network?: string;
+      address: string;
+      functionName: string;
+      args?: any[];
+      abi?: any[];
+    }) => {
       try {
-        const result = await readContract(
+        const result = await kit.readContract(
           {
             address: input.address,
             functionName: input.functionName,
@@ -406,7 +391,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       abi?: any[];
     }) => {
       try {
-        const txResult = await swapExactInput({
+        const txResult = await kit.swapExactInput({
           network: input.network,
           routerAddress: input.routerAddress,
           functionName: input.functionName,
@@ -462,7 +447,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
     },
     async (input: { tokenAddress?: string; symbol?: string }) => {
       try {
-        const result = await getTokenPrices({
+        const result = await api.getPrice({
           tokenAddress: input.tokenAddress,
           symbol: input.symbol,
         });
@@ -471,7 +456,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
           content: [
             {
               type: "text",
-              text: JSON.stringify(result.raw, null, 2),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
@@ -558,19 +543,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const txResult = await addLiquidityV2({
-          network: input.network,
-          routerAddress: input.routerAddress,
-          abi: input.abi,
-          tokenA: input.tokenA,
-          tokenB: input.tokenB,
-          amountADesired: input.amountADesired,
-          amountBDesired: input.amountBDesired,
-          amountAMin: input.amountAMin,
-          amountBMin: input.amountBMin,
-          to: input.to,
-          deadline: input.deadline,
-        });
+        const txResult = await kit.addLiquidityV2(input);
 
         return {
           content: [
@@ -668,18 +641,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const txResult = await removeLiquidityV2({
-          network: input.network,
-          routerAddress: input.routerAddress,
-          abi: input.abi,
-          tokenA: input.tokenA,
-          tokenB: input.tokenB,
-          liquidity: input.liquidity,
-          amountAMin: input.amountAMin,
-          amountBMin: input.amountBMin,
-          to: input.to,
-          deadline: input.deadline,
-        });
+        const txResult = await kit.removeLiquidityV2(input);
 
         return {
           content: [
@@ -791,22 +753,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const result = await mintPositionV3({
-          network: input.network,
-          positionManagerAddress: input.positionManagerAddress,
-          abi: input.abi,
-          token0: input.token0,
-          token1: input.token1,
-          fee: input.fee,
-          tickLower: input.tickLower,
-          tickUpper: input.tickUpper,
-          amount0Desired: input.amount0Desired,
-          amount1Desired: input.amount1Desired,
-          amount0Min: input.amount0Min,
-          amount1Min: input.amount1Min,
-          recipient: input.recipient,
-          deadline: input.deadline,
-        });
+        const result = await kit.mintPositionV3(input);
 
         return {
           content: [
@@ -914,22 +861,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const result = await increaseLiquidityV3({
-          network: input.network,
-          positionManagerAddress: input.positionManagerAddress,
-          abi: input.abi,
-          tokenId: input.tokenId,
-          token0: input.token0,
-          token1: input.token1,
-          fee: input.fee,
-          tickLower: input.tickLower,
-          tickUpper: input.tickUpper,
-          amount0Desired: input.amount0Desired,
-          amount1Desired: input.amount1Desired,
-          amount0Min: input.amount0Min,
-          amount1Min: input.amount1Min,
-          deadline: input.deadline,
-        });
+        const result = await kit.increaseLiquidityV3(input);
 
         return {
           content: [
@@ -1014,19 +946,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const result = await decreaseLiquidityV3({
-          network: input.network,
-          positionManagerAddress: input.positionManagerAddress,
-          abi: input.abi,
-          tokenId: input.tokenId,
-          liquidity: input.liquidity,
-          token0: input.token0,
-          token1: input.token1,
-          fee: input.fee,
-          amount0Min: input.amount0Min,
-          amount1Min: input.amount1Min,
-          deadline: input.deadline,
-        });
+        const result = await kit.decreaseLiquidityV3(input);
 
         return {
           content: [
@@ -1089,9 +1009,16 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
         openWorldHint: false,
       },
     },
-    async (input: ContractSendParams & { network?: string }) => {
+    async (input: {
+      network?: string;
+      address: string;
+      functionName: string;
+      args?: any[];
+      value?: string;
+      abi?: any[];
+    }) => {
       try {
-        const txResult = await sendContractTx({
+        const txResult = await kit.sendContractTx({
           address: input.address,
           functionName: input.functionName,
           args: input.args,
@@ -1203,21 +1130,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       createPoolIfNeeded?: boolean;
     }) => {
       try {
-        const result = await mintPositionV4({
-          network: input.network,
-          token0: input.token0,
-          token1: input.token1,
-          fee: input.fee,
-          tickLower: input.tickLower,
-          tickUpper: input.tickUpper,
-          amount0Desired: input.amount0Desired,
-          amount1Desired: input.amount1Desired,
-          slippage: input.slippage,
-          recipient: input.recipient,
-          deadline: input.deadline,
-          sqrtPriceX96: input.sqrtPriceX96,
-          createPoolIfNeeded: input.createPoolIfNeeded,
-        });
+        const result = await kit.mintPositionV4(input);
 
         return {
           content: [
@@ -1294,17 +1207,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const result = await increaseLiquidityV4({
-          network: input.network,
-          tokenId: input.tokenId,
-          token0: input.token0,
-          token1: input.token1,
-          fee: input.fee,
-          amount0Desired: input.amount0Desired,
-          amount1Desired: input.amount1Desired,
-          slippage: input.slippage,
-          deadline: input.deadline,
-        });
+        const result = await kit.increaseLiquidityV4(input);
 
         return {
           content: [
@@ -1383,18 +1286,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const result = await decreaseLiquidityV4({
-          network: input.network,
-          tokenId: input.tokenId,
-          liquidity: input.liquidity,
-          token0: input.token0,
-          token1: input.token1,
-          fee: input.fee,
-          amount0Min: input.amount0Min,
-          amount1Min: input.amount1Min,
-          slippage: input.slippage,
-          deadline: input.deadline,
-        });
+        const result = await kit.decreaseLiquidityV4(input);
 
         return {
           content: [
@@ -1465,14 +1357,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       deadline?: string | number;
     }) => {
       try {
-        const result = await collectPositionV4({
-          network: input.network,
-          tokenId: input.tokenId,
-          token0: input.token0,
-          token1: input.token1,
-          fee: input.fee,
-          deadline: input.deadline,
-        });
+        const result = await kit.collectPositionV4(input);
 
         return {
           content: [
@@ -1667,13 +1552,7 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
       slippage?: number;
     }) => {
       try {
-        const result = await executeSwap({
-          tokenIn: input.tokenIn,
-          tokenOut: input.tokenOut,
-          amountIn: input.amountIn,
-          network: input.network,
-          slippage: input.slippage,
-        });
+        const result = await kit.swap(input);
 
         return {
           content: [
