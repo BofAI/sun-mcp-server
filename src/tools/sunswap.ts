@@ -18,6 +18,12 @@ import {
   decreaseLiquidityV3,
   collectPositionV3,
 } from "../sunswap/positionsV3";
+import {
+  mintPositionV4,
+  increaseLiquidityV4,
+  decreaseLiquidityV4,
+  collectPositionV4,
+} from "../sunswap/positionsV4";
 
 export function registerSunswapTools(registerTool: RegisterToolFn): void {
   registerTool(
@@ -1102,6 +1108,380 @@ export function registerSunswapTools(registerTool: RegisterToolFn): void {
             {
               type: "text",
               text: `Error sending contract transaction: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // ─── SUNSWAP V4 Concentrated Liquidity ─────────────────────────────────
+
+  registerTool(
+    "sunswap_v4_mint_position",
+    {
+      description:
+        "Mint a new SUNSWAP V4 concentrated liquidity position. Uses Permit2 for token authorization. If pool doesn't exist, provide sqrtPriceX96 to auto-create. Supports auto-compute: if tickLower/tickUpper are omitted, defaults to ±100*tickSpacing from current tick; if only one amount is provided, calculates the other.",
+      inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .describe("TRON network: mainnet or nile (default: mainnet)"),
+        token0: z.string().describe("Token0 contract address (base58)."),
+        token1: z.string().describe("Token1 contract address (base58)."),
+        fee: z
+          .number()
+          .optional()
+          .describe("Pool fee tier (100, 500, 3000, 10000). Defaults to 500."),
+        tickLower: z
+          .number()
+          .optional()
+          .describe("Lower tick. If omitted, auto-set to currentTick - 100*tickSpacing."),
+        tickUpper: z
+          .number()
+          .optional()
+          .describe("Upper tick. If omitted, auto-set to currentTick + 100*tickSpacing."),
+        amount0Desired: z
+          .string()
+          .optional()
+          .describe("Desired amount of token0 (raw units). Auto-computed if only amount1 given."),
+        amount1Desired: z
+          .string()
+          .optional()
+          .describe("Desired amount of token1 (raw units). Auto-computed if only amount0 given."),
+        slippage: z
+          .number()
+          .optional()
+          .describe("Slippage tolerance (e.g. 0.005 for 0.5%). Defaults to 0.05 (5%)."),
+        recipient: z
+          .string()
+          .optional()
+          .describe("Recipient of the position NFT. Defaults to active wallet."),
+        deadline: z
+          .union([z.string(), z.number()])
+          .optional()
+          .describe("Unix timestamp deadline. Defaults to now + 30 minutes."),
+        sqrtPriceX96: z
+          .string()
+          .optional()
+          .describe("Initial sqrtPriceX96 for pool creation. Required if pool doesn't exist."),
+        createPoolIfNeeded: z
+          .boolean()
+          .optional()
+          .describe("If true, auto-create pool if it doesn't exist (requires sqrtPriceX96)."),
+      },
+      annotations: {
+        title: "SUNSwap V4 Mint Position",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input: {
+      network?: string;
+      token0: string;
+      token1: string;
+      fee?: number;
+      tickLower?: number;
+      tickUpper?: number;
+      amount0Desired?: string;
+      amount1Desired?: string;
+      slippage?: number;
+      recipient?: string;
+      deadline?: string | number;
+      sqrtPriceX96?: string;
+      createPoolIfNeeded?: boolean;
+    }) => {
+      try {
+        const result = await mintPositionV4({
+          network: input.network,
+          token0: input.token0,
+          token1: input.token1,
+          fee: input.fee,
+          tickLower: input.tickLower,
+          tickUpper: input.tickUpper,
+          amount0Desired: input.amount0Desired,
+          amount1Desired: input.amount1Desired,
+          slippage: input.slippage,
+          recipient: input.recipient,
+          deadline: input.deadline,
+          sqrtPriceX96: input.sqrtPriceX96,
+          createPoolIfNeeded: input.createPoolIfNeeded,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error minting V4 position: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  registerTool(
+    "sunswap_v4_increase_liquidity",
+    {
+      description:
+        "Increase liquidity of an existing SUNSWAP V4 position. Uses Permit2 for token authorization. Requires token0/token1 for proper authorization. If only one amount is provided, calculates the other from position tick range.",
+      inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .describe("TRON network: mainnet or nile (default: mainnet)"),
+        tokenId: z.string().describe("Token ID of the V4 position NFT."),
+        token0: z.string().describe("Token0 contract address (base58). Required for authorization."),
+        token1: z.string().describe("Token1 contract address (base58). Required for authorization."),
+        fee: z.number().optional().describe("Pool fee tier for lookup. Defaults to 500."),
+        amount0Desired: z
+          .string()
+          .optional()
+          .describe("Desired additional amount of token0 (raw units)."),
+        amount1Desired: z
+          .string()
+          .optional()
+          .describe("Desired additional amount of token1 (raw units)."),
+        slippage: z
+          .number()
+          .optional()
+          .describe("Slippage tolerance (e.g. 0.005 for 0.5%). Defaults to 0.05 (5%)."),
+        deadline: z
+          .union([z.string(), z.number()])
+          .optional()
+          .describe("Unix timestamp deadline. Defaults to now + 30 minutes."),
+      },
+      annotations: {
+        title: "SUNSwap V4 Increase Liquidity",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input: {
+      network?: string;
+      tokenId: string;
+      token0: string;
+      token1: string;
+      fee?: number;
+      amount0Desired?: string;
+      amount1Desired?: string;
+      slippage?: number;
+      deadline?: string | number;
+    }) => {
+      try {
+        const result = await increaseLiquidityV4({
+          network: input.network,
+          tokenId: input.tokenId,
+          token0: input.token0,
+          token1: input.token1,
+          fee: input.fee,
+          amount0Desired: input.amount0Desired,
+          amount1Desired: input.amount1Desired,
+          slippage: input.slippage,
+          deadline: input.deadline,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error increasing V4 liquidity: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  registerTool(
+    "sunswap_v4_decrease_liquidity",
+    {
+      description:
+        "Decrease liquidity of an existing SUNSWAP V4 position. Withdrawn tokens are sent to the caller via CLOSE_CURRENCY action.",
+      inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .describe("TRON network: mainnet or nile (default: mainnet)"),
+        tokenId: z.string().describe("Token ID of the V4 position NFT."),
+        liquidity: z.string().describe("Amount of liquidity to burn (raw units)."),
+        token0: z.string().describe("Token0 contract address (base58). Required for pool lookup."),
+        token1: z.string().describe("Token1 contract address (base58). Required for pool lookup."),
+        fee: z.number().optional().describe("Pool fee tier for lookup. Defaults to 500."),
+        amount0Min: z
+          .string()
+          .optional()
+          .describe("Minimum token0 to receive. Defaults to 0 with slippage applied."),
+        amount1Min: z
+          .string()
+          .optional()
+          .describe("Minimum token1 to receive. Defaults to 0 with slippage applied."),
+        slippage: z
+          .number()
+          .optional()
+          .describe("Slippage tolerance (e.g. 0.005 for 0.5%). Defaults to 0.05 (5%)."),
+        deadline: z
+          .union([z.string(), z.number()])
+          .optional()
+          .describe("Unix timestamp deadline. Defaults to now + 30 minutes."),
+      },
+      annotations: {
+        title: "SUNSwap V4 Decrease Liquidity",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input: {
+      network?: string;
+      tokenId: string;
+      liquidity: string;
+      token0: string;
+      token1: string;
+      fee?: number;
+      amount0Min?: string;
+      amount1Min?: string;
+      slippage?: number;
+      deadline?: string | number;
+    }) => {
+      try {
+        const result = await decreaseLiquidityV4({
+          network: input.network,
+          tokenId: input.tokenId,
+          liquidity: input.liquidity,
+          token0: input.token0,
+          token1: input.token1,
+          fee: input.fee,
+          amount0Min: input.amount0Min,
+          amount1Min: input.amount1Min,
+          slippage: input.slippage,
+          deadline: input.deadline,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error decreasing V4 liquidity: ${
+                error instanceof Error ? error.message : String(error)
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  registerTool(
+    "sunswap_v4_collect",
+    {
+      description:
+        "Collect accrued fees from an existing SUNSWAP V4 position. Uses CLOSE_CURRENCY to collect all accumulated fees.",
+      inputSchema: {
+        network: z
+          .string()
+          .optional()
+          .describe("TRON network: mainnet or nile (default: mainnet)"),
+        tokenId: z.string().describe("Token ID of the V4 position NFT."),
+        token0: z
+          .string()
+          .optional()
+          .describe("Token0 contract address (base58). Optional, can be read from position."),
+        token1: z
+          .string()
+          .optional()
+          .describe("Token1 contract address (base58). Optional, can be read from position."),
+        fee: z
+          .number()
+          .optional()
+          .describe("Pool fee tier. Optional, can be read from position."),
+        deadline: z
+          .union([z.string(), z.number()])
+          .optional()
+          .describe("Unix timestamp deadline. Defaults to now + 30 minutes."),
+      },
+      annotations: {
+        title: "SUNSwap V4 Collect Fees",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async (input: {
+      network?: string;
+      tokenId: string;
+      token0?: string;
+      token1?: string;
+      fee?: number;
+      deadline?: string | number;
+    }) => {
+      try {
+        const result = await collectPositionV4({
+          network: input.network,
+          tokenId: input.tokenId,
+          token0: input.token0,
+          token1: input.token1,
+          fee: input.fee,
+          deadline: input.deadline,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error collecting V4 fees: ${
                 error instanceof Error ? error.message : String(error)
               }`,
             },
