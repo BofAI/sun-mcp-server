@@ -14,13 +14,21 @@ An MCP server for AI-driven DeFi operations on the TRON network through the SUN.
 - [Overview](#overview)
 - [Supported SUN.IO API Domains](#supported-sunio-api-domains)
 - [API Reference (from `sunio-open-api.json`)](#api-reference-from-sunio-open-apijson)
+- [SUNSWAP Tools Reference](#sunswap-tools-reference)
+  - [Wallet Tools](#wallet-tools)
+  - [Pricing & Quoting Tools](#pricing--quoting-tools)
+  - [Swap Tools](#swap-tools)
+  - [V2 Liquidity Tools](#v2-liquidity-tools)
+  - [V3 Liquidity Tools](#v3-liquidity-tools)
+  - [V4 Liquidity Tools](#v4-liquidity-tools)
+  - [Generic Contract Tools](#generic-contract-tools)
+  - [Auto-Compute Features Summary](#auto-compute-features-summary)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Client Integration](#client-integration)
 - [Security Considerations](#security-considerations)
-- [Project Structure](#project-structure)
 - [License](#license)
 
 ## Overview
@@ -95,47 +103,542 @@ Primary use cases:
 - `getFarmTransactions` (`GET /apiv2/farms/transactions`): farm transaction scanning.
 - `getFarmPositions` (`GET /apiv2/farms/positions/user`): user farming positions.
 
-### SUN.IO / SUNSWAP tools
+### SUNSWAP Tools Reference
 
-In addition to the OpenAPI-generated tools, this server registers a set of custom SUNSWAP tools under the `sunswap_*` prefix via `src/tools/sunswap.ts`. These include:
+The server exposes a comprehensive set of tools for DeFi operations. All tools are accessible via MCP protocol or HTTP (when running in `streamable-http` mode).
 
-- Wallet and balances:
-  - `sunswap_get_wallet_address`
-  - `sunswap_get_balances`
-  - `sunswap_list_wallets` (agent-wallet mode: list all available wallets)
-  - `sunswap_select_wallet` (agent-wallet mode: switch active wallet)
-- Pricing and quoting:
-  - `sunswap_get_token_price`
-  - `sunswap_quote_exact_input`
-- Generic contract helpers:
-  - `sunswap_read_contract` (view/pure calls)
-  - `sunswap_send_contract` (state-changing calls)
-- Swap and liquidity management:
-  - `sunswap_swap_exact_input` (low-level router swap, takes router address/ABI and arguments)
-  - `sunswap_swap` (high-level simple swap via Universal Router; only needs `tokenIn`, `tokenOut`, `amountIn`, optional `network`/`slippage`)
-  - `sunswap_v2_add_liquidity` (V2 add liquidity; auto-checks TRC20 approvals, adaptive optimal amounts, TRX support via `addLiquidityETH`)
-  - `sunswap_v2_remove_liquidity` (V2 remove liquidity; auto-discovers LP pair, TRX support via `removeLiquidityETH`)
-  - `sunswap_v3_mint_position` (V3 mint with **auto-compute**: `fee` defaults to 3000; `tickLower`/`tickUpper` auto-set from currentPrice ± 50×tickSpacing; single-sided input auto-calculates the other token via V3 math; `amountMin` defaults to 5% slippage; `deadline` defaults to now + 30 min)
-  - `sunswap_v3_increase_liquidity` (V3 increase; single-sided input auto-compute when `token0`/`token1`/`fee` are provided; `amountMin` and `deadline` auto-set)
-  - `sunswap_v3_decrease_liquidity` (V3 decrease; `amount0Min`/`amount1Min` auto-calculated from V3 math + 5% slippage when `token0`/`token1`/`fee` are provided; `deadline` auto-set)
-  - `sunswap_v3_collect` (V3 collect accrued fees with pre-estimation of claimable amounts)
+---
 
-These tools follow the same MCP tooling pattern as the OpenAPI-mapped tools and can be invoked from MCP-compatible clients once the server is running. All write tools reuse the unified `Wallet` abstraction (`src/wallet/`) and contract helper pipeline (`readContract` / `sendContractTx` / `ensureTokenAllowance`).
+## Wallet Tools
 
-#### V3 Auto-Compute Features
+### `sunswap_get_wallet_address`
 
-The V3 tools support intelligent parameter auto-computation, minimizing the input required from AI agents:
+Get the active TRON wallet address.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network: `mainnet`, `nile`, or `shasta`. Default: `mainnet` |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_get_wallet_address",
+      "arguments": { "network": "mainnet" }
+    }
+  }'
+```
+
+### `sunswap_list_wallets`
+
+List all available wallets (agent-wallet mode only).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| (none) | - | - | No parameters required |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": { "name": "sunswap_list_wallets", "arguments": {} }
+  }'
+```
+
+### `sunswap_select_wallet`
+
+Switch the active wallet (agent-wallet mode only).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `walletId` | string | Yes | The wallet ID to switch to |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_select_wallet",
+      "arguments": { "walletId": "my-wallet" }
+    }
+  }'
+```
+
+### `sunswap_get_balances`
+
+Get TRX and TRC20 balances for a wallet.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `ownerAddress` | string | No | Wallet address. Defaults to active wallet |
+| `tokens` | array | Yes | Array of token queries: `[{ type: "TRX" }]` or `[{ type: "TRC20", tokenAddress: "..." }]` |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_get_balances",
+      "arguments": {
+        "network": "mainnet",
+        "tokens": [
+          { "type": "TRX" },
+          { "type": "TRC20", "tokenAddress": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t" }
+        ]
+      }
+    }
+  }'
+```
+
+---
+
+## Pricing & Quoting Tools
+
+### `sunswap_get_token_price`
+
+Get token prices from SUN.IO API.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tokenAddress` | string | No | Comma-separated token addresses |
+| `symbol` | string | No | Comma-separated token symbols (e.g., `SUN,TRX,USDT`) |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_get_token_price",
+      "arguments": { "symbol": "TRX,USDT,SUN" }
+    }
+  }'
+```
+
+### `sunswap_quote_exact_input`
+
+Get swap quote from the smart router.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `routerAddress` | string | Yes | Smart router contract address |
+| `functionName` | string | No | Quote function name. Default: `quoteExactInput` |
+| `args` | array | Yes | Arguments for the router quote function |
+| `abi` | array | No | Optional router ABI |
+
+---
+
+## Swap Tools
+
+### `sunswap_swap` ⭐ (Recommended)
+
+Execute a token swap via Universal Router. **Simplest way to swap** - automatically finds best route and handles Permit2.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tokenIn` | string | Yes | Input token address (base58). Use `T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb` for TRX |
+| `tokenOut` | string | Yes | Output token address (base58) |
+| `amountIn` | string | Yes | Amount in raw units (e.g., `1000000` = 1 USDT with 6 decimals) |
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `slippage` | number | No | Slippage tolerance (0.005 = 0.5%). Default: `0.005` |
+
+**curl Example - Swap 10 TRX to USDT:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_swap",
+      "arguments": {
+        "tokenIn": "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+        "tokenOut": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+        "amountIn": "10000000",
+        "network": "mainnet",
+        "slippage": 0.01
+      }
+    }
+  }'
+```
+
+### `sunswap_swap_exact_input`
+
+Low-level router swap with full control.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `routerAddress` | string | Yes | Smart router contract address |
+| `functionName` | string | No | Swap function name. Default: `swapExactInput` |
+| `args` | array | Yes | Arguments for the router swap function |
+| `value` | string | No | TRX amount in Sun to attach |
+| `abi` | array | No | Optional router ABI |
+
+---
+
+## V2 Liquidity Tools
+
+### `sunswap_v2_add_liquidity`
+
+Add liquidity to a SUNSWAP V2 pool. Automatically handles TRX via `addLiquidityETH`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `routerAddress` | string | Yes | V2 router contract address |
+| `abi` | array | No | Optional router ABI |
+| `tokenA` | string | Yes | Token A contract address |
+| `tokenB` | string | Yes | Token B contract address |
+| `amountADesired` | string | Yes | Desired amount of token A (raw units) |
+| `amountBDesired` | string | Yes | Desired amount of token B (raw units) |
+| `amountAMin` | string | No | Min token A. Default: 5% slippage |
+| `amountBMin` | string | No | Min token B. Default: 5% slippage |
+| `to` | string | No | LP token recipient. Default: active wallet |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_v2_add_liquidity",
+      "arguments": {
+        "network": "mainnet",
+        "routerAddress": "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax",
+        "tokenA": "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+        "tokenB": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+        "amountADesired": "10000000",
+        "amountBDesired": "10000000"
+      }
+    }
+  }'
+```
+
+### `sunswap_v2_remove_liquidity`
+
+Remove liquidity from a SUNSWAP V2 pool.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `routerAddress` | string | Yes | V2 router contract address |
+| `abi` | array | No | Optional router ABI |
+| `tokenA` | string | Yes | Token A address |
+| `tokenB` | string | Yes | Token B address |
+| `liquidity` | string | Yes | Amount of LP tokens to burn |
+| `amountAMin` | string | No | Min token A to receive |
+| `amountBMin` | string | No | Min token B to receive |
+| `to` | string | No | Recipient. Default: active wallet |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+---
+
+## V3 Liquidity Tools
+
+### `sunswap_v3_mint_position`
+
+Mint a new V3 concentrated liquidity position with **auto-compute** features.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `positionManagerAddress` | string | Yes | V3 NonfungiblePositionManager address |
+| `abi` | array | No | Optional position manager ABI |
+| `token0` | string | Yes | Token0 contract address |
+| `token1` | string | Yes | Token1 contract address |
+| `fee` | number | No | Pool fee tier (100, 500, 3000, 10000). Default: `3000` |
+| `tickLower` | number | No | Lower tick. Auto: currentTick - 50×tickSpacing |
+| `tickUpper` | number | No | Upper tick. Auto: currentTick + 50×tickSpacing |
+| `amount0Desired` | string | No* | Desired token0 amount. *At least one amount required |
+| `amount1Desired` | string | No* | Desired token1 amount. *At least one amount required |
+| `amount0Min` | string | No | Min token0. Default: desired × 95% |
+| `amount1Min` | string | No | Min token1. Default: desired × 95% |
+| `recipient` | string | No | NFT recipient. Default: active wallet |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_v3_mint_position",
+      "arguments": {
+        "network": "mainnet",
+        "positionManagerAddress": "TLMqZmBPCX5gK1rVxcNp5XvYBZQJuKjGjJ",
+        "token0": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+        "token1": "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+        "fee": 3000,
+        "amount0Desired": "10000000"
+      }
+    }
+  }'
+```
+
+### `sunswap_v3_increase_liquidity`
+
+Add liquidity to an existing V3 position.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `positionManagerAddress` | string | Yes | V3 NonfungiblePositionManager address |
+| `tokenId` | string | Yes | Token ID of the V3 position NFT |
+| `token0` | string | No | Token0 address (for auto-compute) |
+| `token1` | string | No | Token1 address (for auto-compute) |
+| `fee` | number | No | Pool fee tier. Default: `3000` |
+| `amount0Desired` | string | No | Desired additional token0 |
+| `amount1Desired` | string | No | Desired additional token1 |
+| `amount0Min` | string | No | Min token0. Default: desired × 95% |
+| `amount1Min` | string | No | Min token1. Default: desired × 95% |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+### `sunswap_v3_decrease_liquidity`
+
+Remove liquidity from an existing V3 position.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `positionManagerAddress` | string | Yes | V3 NonfungiblePositionManager address |
+| `tokenId` | string | Yes | Token ID of the V3 position NFT |
+| `liquidity` | string | Yes | Amount of liquidity to burn |
+| `token0` | string | No | Token0 address (for auto-compute) |
+| `token1` | string | No | Token1 address (for auto-compute) |
+| `fee` | number | No | Pool fee tier. Default: `3000` |
+| `amount0Min` | string | No | Min token0. Auto-computed with 5% slippage |
+| `amount1Min` | string | No | Min token1. Auto-computed with 5% slippage |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+### `sunswap_v3_collect`
+
+Collect accrued fees from a V3 position.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `positionManagerAddress` | string | Yes | V3 NonfungiblePositionManager address |
+| `tokenId` | string | Yes | Token ID of the V3 position NFT |
+| `recipient` | string | No | Fee recipient. Default: active wallet |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_v3_collect",
+      "arguments": {
+        "network": "mainnet",
+        "positionManagerAddress": "TLMqZmBPCX5gK1rVxcNp5XvYBZQJuKjGjJ",
+        "tokenId": "12345"
+      }
+    }
+  }'
+```
+
+---
+
+## V4 Liquidity Tools
+
+SUNSWAP V4 uses the new concentrated liquidity model with Permit2 authorization.
+
+### `sunswap_v4_mint_position`
+
+Mint a new V4 concentrated liquidity position.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network: `mainnet` or `nile`. Default: `mainnet` |
+| `token0` | string | Yes | Token0 contract address (base58) |
+| `token1` | string | Yes | Token1 contract address (base58) |
+| `fee` | number | No | Pool fee tier (100, 500, 3000, 10000). Default: `500` |
+| `tickLower` | number | No | Lower tick. Auto: currentTick - 100×tickSpacing |
+| `tickUpper` | number | No | Upper tick. Auto: currentTick + 100×tickSpacing |
+| `amount0Desired` | string | No* | Desired token0 amount. *At least one required |
+| `amount1Desired` | string | No* | Desired token1 amount. *At least one required |
+| `slippage` | number | No | Slippage tolerance (0.05 = 5%). Default: `0.05` |
+| `recipient` | string | No | NFT recipient. Default: active wallet |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+| `sqrtPriceX96` | string | No | Initial price for pool creation |
+| `createPoolIfNeeded` | boolean | No | Auto-create pool if not exists |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_v4_mint_position",
+      "arguments": {
+        "network": "nile",
+        "token0": "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+        "token1": "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK",
+        "fee": 500,
+        "amount0Desired": "1000000000000000000",
+        "slippage": 0.05
+      }
+    }
+  }'
+```
+
+### `sunswap_v4_increase_liquidity`
+
+Increase liquidity of an existing V4 position.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `tokenId` | string | Yes | Token ID of the V4 position NFT |
+| `token0` | string | Yes | Token0 address (required for Permit2) |
+| `token1` | string | Yes | Token1 address (required for Permit2) |
+| `fee` | number | No | Pool fee tier. Default: `500` |
+| `amount0Desired` | string | No | Desired additional token0 |
+| `amount1Desired` | string | No | Desired additional token1 |
+| `slippage` | number | No | Slippage tolerance. Default: `0.05` |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+### `sunswap_v4_decrease_liquidity`
+
+Decrease liquidity of an existing V4 position.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `tokenId` | string | Yes | Token ID of the V4 position NFT |
+| `liquidity` | string | Yes | Amount of liquidity to burn |
+| `token0` | string | Yes | Token0 address |
+| `token1` | string | Yes | Token1 address |
+| `fee` | number | No | Pool fee tier. Default: `500` |
+| `amount0Min` | string | No | Min token0. Default: slippage-adjusted |
+| `amount1Min` | string | No | Min token1. Default: slippage-adjusted |
+| `slippage` | number | No | Slippage tolerance. Default: `0.05` |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+### `sunswap_v4_collect`
+
+Collect accrued fees from a V4 position.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `tokenId` | string | Yes | Token ID of the V4 position NFT |
+| `token0` | string | No | Token0 address (optional, can read from position) |
+| `token1` | string | No | Token1 address (optional, can read from position) |
+| `fee` | number | No | Pool fee tier (optional) |
+| `deadline` | string/number | No | Unix timestamp. Default: now + 30 min |
+
+---
+
+## Generic Contract Tools
+
+### `sunswap_read_contract`
+
+Read data from a TRON smart contract (view/pure functions).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `address` | string | Yes | Contract address (base58 or hex) |
+| `functionName` | string | Yes | Name of the view/pure function |
+| `args` | array | No | Arguments to pass to the function |
+| `abi` | array | No | Optional contract ABI |
+
+**curl Example:**
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "sunswap_read_contract",
+      "arguments": {
+        "network": "mainnet",
+        "address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+        "functionName": "balanceOf",
+        "args": ["TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"]
+      }
+    }
+  }'
+```
+
+### `sunswap_send_contract`
+
+Execute a state-changing contract transaction.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `network` | string | No | TRON network. Default: `mainnet` |
+| `address` | string | Yes | Contract address |
+| `functionName` | string | Yes | Name of the function to call |
+| `args` | array | No | Arguments to pass to the function |
+| `value` | string | No | TRX amount in Sun to attach |
+| `abi` | array | No | Optional contract ABI |
+
+---
+
+## Auto-Compute Features Summary
+
+### V3 Auto-Compute
 
 | Parameter | Mint | Increase | Decrease |
 |-----------|------|----------|----------|
-| `fee` | Defaults to 3000 | Defaults to 3000 | Defaults to 3000 |
-| `tickLower` / `tickUpper` | Auto: currentTick ± 50×tickSpacing | N/A (reads from position) | N/A |
-| Single-sided input | Provide only `amount0Desired` OR `amount1Desired`; the other is computed from pool price and V3 math | Same (requires `token0`/`token1`/`fee`) | N/A |
-| `amount0Min` / `amount1Min` | Auto: desired × 95% | Auto: desired × 95% | Auto: computed from `getAmountsForLiquidity` × 95% |
-| `recipient` / `to` | Defaults to wallet address | N/A | N/A |
-| `deadline` | Defaults to now + 30 min | Same | Same |
+| `fee` | Default: 3000 | Default: 3000 | Default: 3000 |
+| `tickLower/tickUpper` | Auto: ±50×tickSpacing | N/A (from position) | N/A |
+| Single-sided input | ✅ Computes other amount | ✅ Computes other amount | N/A |
+| `amountMin` | Auto: desired × 95% | Auto: desired × 95% | Auto: computed × 95% |
+| `recipient` | Default: wallet | N/A | N/A |
+| `deadline` | Default: now + 30 min | Same | Same |
 
-These defaults mean a typical V3 mint can be invoked with just `token0`, `token1`, and `amount0Desired`—all other parameters are derived automatically.
+### V4 Auto-Compute
+
+| Parameter | Mint | Increase | Decrease |
+|-----------|------|----------|----------|
+| `fee` | Default: 500 | Default: 500 | Default: 500 |
+| `tickLower/tickUpper` | Auto: ±100×tickSpacing | N/A (from position) | N/A |
+| Single-sided input | ✅ Computes other amount | ✅ Computes other amount | N/A |
+| `slippage` | Default: 5% | Default: 5% | Default: 5% |
+| `recipient` | Default: wallet | N/A | N/A |
+| `deadline` | Default: now + 30 min | Same | Same |
 
 ### SUNSWAP contract addresses and ABIs
 
