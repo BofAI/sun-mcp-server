@@ -21,7 +21,7 @@ jest.mock("@scure/bip32", () => ({
 }));
 
 jest.mock("@bankofai/agent-wallet", () => ({
-  WalletFactory: jest.fn(() => ({})),
+  resolveWalletProvider: jest.fn(() => ({})),
   SecureKVStore: class SecureKVStoreMock {},
   TronWallet: class TronWalletMock {},
   loadConfig: jest.fn(() => ({ wallets: {} })),
@@ -111,24 +111,9 @@ function mockApi(overrides: Record<string, jest.Mock> = {}) {
 // ---------------------------------------------------------------------------
 
 const mockGetWalletAddress = jest.fn().mockResolvedValue("TMockWalletAddress123");
-const mockIsLocalWalletConfigured = jest.fn().mockReturnValue(false);
-const mockGetConfiguredLocalWallet = jest.fn().mockReturnValue({ privateKey: "abc", address: "TLocal1" });
-const mockIsAgentWalletConfigured = jest.fn().mockReturnValue(false);
-const mockListAgentWallets = jest.fn().mockResolvedValue([]);
-const mockSelectWallet = jest.fn().mockResolvedValue({ id: "w1", address: "TAgent1" });
-const mockGetActiveWalletId = jest.fn().mockReturnValue(null);
 
 jest.mock("../../src/wallet", () => ({
   getWalletAddress: (...args: any[]) => mockGetWalletAddress(...args),
-  isLocalWalletConfigured: (...args: any[]) => mockIsLocalWalletConfigured(...args),
-  getConfiguredLocalWallet: (...args: any[]) => mockGetConfiguredLocalWallet(...args),
-}));
-
-jest.mock("../../src/wallet/agent-wallet", () => ({
-  listAgentWallets: (...args: any[]) => mockListAgentWallets(...args),
-  selectWallet: (...args: any[]) => mockSelectWallet(...args),
-  getActiveWalletId: (...args: any[]) => mockGetActiveWalletId(...args),
-  isAgentWalletConfigured: (...args: any[]) => mockIsAgentWalletConfigured(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -269,79 +254,6 @@ describe("sunswap tool handlers", () => {
 
       expect(result.isError).toBe(true);
       expect(textOf(result)).toContain("api down");
-    });
-  });
-
-  // =========================================================================
-  // WALLET MANAGEMENT tools
-  // =========================================================================
-
-  describe("sunswap_list_wallets", () => {
-    it("returns agent wallets when agent-wallet configured", async () => {
-      mockIsAgentWalletConfigured.mockReturnValueOnce(true);
-      mockListAgentWallets.mockResolvedValueOnce([
-        { id: "w1", type: "tron_local", address: "TAgent1" },
-      ]);
-      mockGetActiveWalletId.mockReturnValueOnce("w1");
-
-      const result = await handlers.sunswap_list_wallets({});
-      const data = jsonOf(result);
-
-      expect(data.mode).toBe("agent-wallet");
-      expect(data.wallets).toHaveLength(1);
-      expect(data.activeWalletId).toBe("w1");
-    });
-
-    it("returns local wallet when only local configured", async () => {
-      mockIsAgentWalletConfigured.mockReturnValueOnce(false);
-      mockIsLocalWalletConfigured.mockReturnValueOnce(true);
-      mockGetConfiguredLocalWallet.mockReturnValueOnce({ privateKey: "abc", address: "TLocal1" });
-
-      const result = await handlers.sunswap_list_wallets({});
-      const data = jsonOf(result);
-
-      expect(data.mode).toBe("local");
-      expect(data.wallets[0].address).toBe("TLocal1");
-    });
-
-    it("returns empty when no wallet configured", async () => {
-      mockIsAgentWalletConfigured.mockReturnValueOnce(false);
-      mockIsLocalWalletConfigured.mockReturnValueOnce(false);
-
-      const result = await handlers.sunswap_list_wallets({});
-      const data = jsonOf(result);
-
-      expect(data.wallets).toEqual([]);
-    });
-
-    it("returns isError on failure", async () => {
-      mockIsAgentWalletConfigured.mockImplementationOnce(() => { throw new Error("fs error") });
-
-      const result = await handlers.sunswap_list_wallets({});
-      expect(result.isError).toBe(true);
-      expect(textOf(result)).toContain("fs error");
-    });
-  });
-
-  describe("sunswap_select_wallet", () => {
-    it("switches wallet in agent-wallet mode", async () => {
-      mockIsAgentWalletConfigured.mockReturnValueOnce(true);
-      mockSelectWallet.mockResolvedValueOnce({ id: "w2", address: "TAgent2" });
-
-      const result = await handlers.sunswap_select_wallet({ walletId: "w2" });
-      const data = jsonOf(result);
-
-      expect(data.id).toBe("w2");
-      expect(data.address).toBe("TAgent2");
-      expect(data.message).toContain("w2");
-    });
-
-    it("returns error when not in agent-wallet mode", async () => {
-      mockIsAgentWalletConfigured.mockReturnValueOnce(false);
-
-      const result = await handlers.sunswap_select_wallet({ walletId: "w1" });
-      expect(result.isError).toBe(true);
-      expect(textOf(result)).toContain("agent-wallet mode");
     });
   });
 

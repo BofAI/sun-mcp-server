@@ -11,7 +11,7 @@
 import "dotenv/config";
 import { SunKit } from "@bankofai/sun-kit";
 import { SUNSWAP_V3_NILE_POSITION_MANAGER } from "@bankofai/sun-kit";
-import { isLocalWalletConfigured, initWallet, getWallet } from "../src/wallet";
+import { initWallet, getWallet, isWalletConfigured } from "../src/wallet";
 
 const NETWORK = "nile";
 const PM = SUNSWAP_V3_NILE_POSITION_MANAGER;
@@ -20,12 +20,11 @@ const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
 const FEE = 500;
 
 async function main() {
-  if (!isLocalWalletConfigured()) {
+  await initWallet();
+  if (!isWalletConfigured()) {
     console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
     process.exit(1);
   }
-
-  await initWallet();
   const wallet = getWallet();
   const kit = new SunKit({ wallet, network: NETWORK });
 

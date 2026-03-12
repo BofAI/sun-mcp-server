@@ -26,6 +26,7 @@ out/
 # Testing
 coverage/
 .nyc_output/
+.npm-cache/
 
 # IDEs and editors
 .idea/

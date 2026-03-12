@@ -12,10 +12,10 @@ An MCP server for AI-driven DeFi operations on the TRON network through the SUN.
 ## Contents
 
 - [Overview](#overview)
+- [Quick Start](#quick-start)
 - [Supported SUN.IO API Domains](#supported-sunio-api-domains)
 - [API Reference (from `sunio-open-api.json`)](#api-reference-from-sunio-open-apijson)
 - [SUNSWAP Tools Reference](#sunswap-tools-reference)
-  - [Wallet Tools](#wallet-tools)
   - [Pricing & Quoting Tools](#pricing--quoting-tools)
   - [Swap Tools](#swap-tools)
   - [V2 Liquidity Tools](#v2-liquidity-tools)
@@ -41,7 +41,45 @@ Primary use cases:
 - Track protocol-level trends (volume, liquidity, users, transaction count, pool count).
 - Inspect user LP/farming positions and farm transaction history.
 - Discover contracts and monitor latest chain block context.
-- Use hand-written SUNSWAP tools (`sunswap_*`) for wallet inspection, quoting swaps, liquidity management, and other on-chain contract interactions.
+- Use hand-written SUNSWAP tools (`sunswap_*`) for quoting swaps, liquidity management, and other on-chain contract interactions.
+
+## Quick Start
+
+For most users, the npm package is the primary install path.
+
+1. Install the package:
+
+```bash
+npm install -g @bankofai/sun-mcp-server
+```
+
+2. Configure one wallet source if you need write operations:
+
+```bash
+export TRON_PRIVATE_KEY=your_private_key
+# or
+export TRON_MNEMONIC="word1 word2 ..."
+# optionally with
+export TRON_MNEMONIC_ACCOUNT_INDEX=0
+# or
+export AGENT_WALLET_PASSWORD=your_wallet_password
+```
+
+3. Optionally set runtime config:
+
+```bash
+export TRON_NETWORK=mainnet
+export TRON_GRID_API_KEY=your_trongrid_api_key
+export TRON_RPC_URL=https://your-tron-rpc.example
+```
+
+4. Start the MCP server:
+
+```bash
+sun-mcp-server --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath /mcp
+```
+
+If no wallet env is set, the server still starts in read-only mode.
 
 ## Supported SUN.IO API Domains
 
@@ -109,8 +147,6 @@ The server exposes a comprehensive set of tools for DeFi operations. All tools a
 
 ---
 
-## Wallet Tools
-
 ### `sunswap_get_wallet_address`
 
 Get the active TRON wallet address.
@@ -130,49 +166,6 @@ curl -X POST http://localhost:8080/mcp \
     "params": {
       "name": "sunswap_get_wallet_address",
       "arguments": { "network": "mainnet" }
-    }
-  }'
-```
-
-### `sunswap_list_wallets`
-
-List all available wallets (agent-wallet mode only).
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| (none) | - | - | No parameters required |
-
-**curl Example:**
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/call",
-    "params": { "name": "sunswap_list_wallets", "arguments": {} }
-  }'
-```
-
-### `sunswap_select_wallet`
-
-Switch the active wallet (agent-wallet mode only).
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `walletId` | string | Yes | The wallet ID to switch to |
-
-**curl Example:**
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/call",
-    "params": {
-      "name": "sunswap_select_wallet",
-      "arguments": { "walletId": "my-wallet" }
     }
   }'
 ```
@@ -671,6 +664,16 @@ Tool callers can either rely on these defaults (by passing just network + token 
 
 ## Installation
 
+### Install from npm
+
+```bash
+npm install -g @bankofai/sun-mcp-server
+```
+
+This exposes the `sun-mcp-server` CLI.
+
+### Build from source
+
 ```bash
 git clone <your-repo-url>
 cd sun-mcp-server
@@ -680,12 +683,12 @@ npm run build
 
 ## Configuration
 
-Default sample configuration is already included in `config.json` and points to:
+The default sample configuration in `config.json` points to:
 
 - Spec: `./specs/sunio-open-api.json`
 - Target URL: `https://open.sun.io`
 
-You can still override with CLI/env options when needed.
+You can override these values with CLI flags or environment variables when needed.
 
 Key environment variables:
 
@@ -697,47 +700,52 @@ Key environment variables:
 - `CUSTOM_HEADERS`, `HEADER_*`
 - `TARGET_API_TIMEOUT_MS`
 
-### Wallet configuration for write operations
+### Wallet configuration
 
 The SUNSWAP tools support both **read-only** and **state-changing** (write) interactions.
-Write operations require a wallet. The server supports two wallet modes, resolved at startup by `initWallet()` in `src/wallet/index.ts`:
+Write operations require a wallet. The server resolves a single wallet adapter at startup via `initWallet()` in `src/wallet.ts`.
 
-| Priority | Mode | Required env |
-|----------|------|-------------|
-| 1 | **Agent Wallet** (encrypted, key never exposed) | `AGENT_WALLET_PASSWORD` |
-| 2 | **Local Wallet** (raw private key / mnemonic) | `TRON_PRIVATE_KEY` or `TRON_MNEMONIC` |
+You must configure exactly one wallet source:
 
-If neither is configured, the server runs in **read-only mode** — write tools will throw an error.
+- `TRON_PRIVATE_KEY`
+- `TRON_MNEMONIC`
+- `AGENT_WALLET_PASSWORD`
 
-#### Agent Wallet mode
+If more than one is set at the same time, startup will fail. If none are set, the server runs in **read-only mode** and write tools will fail.
 
-Uses the [`@bankofai/agent-wallet`](https://github.com/bankofai/agent-wallet) SDK to manage encrypted wallets. Private keys are never exposed to the server process.
+The server always uses [`@bankofai/agent-wallet`](https://github.com/bankofai/agent-wallet) under the hood. `TRON_PRIVATE_KEY` and `TRON_MNEMONIC` are mapped into the agent-wallet provider environment before resolving the active wallet.
 
-- `AGENT_WALLET_PASSWORD` (**required**): Decryption password for the agent-wallet keystore.
-- `AGENT_WALLET_DIR`: Path to the agent-wallet secrets directory (default: `~/.agent-wallet`). Supports `~/` expansion.
-
-You must create a wallet first using the agent-wallet CLI:
-
-```bash
-npx agent-wallet generate --name my-wallet
-```
-
-At runtime, use `sunswap_list_wallets` and `sunswap_select_wallet` to inspect and switch between wallets.
-
-#### Local Wallet mode
+#### Supported wallet environment variables
 
 - `TRON_PRIVATE_KEY`: Hex private key (with or without `0x` prefix).
 - `TRON_MNEMONIC`: BIP-39 mnemonic phrase (12 or 24 words).
-- `TRON_ACCOUNT_INDEX`: Optional HD derivation index (default: `0`).
+- `TRON_MNEMONIC_ACCOUNT_INDEX`: Optional HD derivation index for `TRON_MNEMONIC`.
+- `AGENT_WALLET_PASSWORD`: Password for an existing agent-wallet keystore.
+- `AGENT_WALLET_DIR`: Optional path to the agent-wallet secrets directory.
 
-#### Shared options
+If you use `AGENT_WALLET_PASSWORD`, create or manage the wallet with the agent-wallet CLI first.
 
-- `TRONGRID_API_KEY` / `TRON_GRID_API_KEY`: Optional TronGrid API key for higher rate limits.
+### Optional TRON runtime configuration
+
+- `TRON_NETWORK`: Optional default network for `SunKit`. Defaults to `mainnet`.
+- `TRON_GRID_API_KEY`: Optional TronGrid API key.
 - `TRON_RPC_URL`: Optional override for the TRON RPC endpoint; replaces the default `fullNode`, `solidityNode`, and `eventServer` URLs.
 
-**Security note**: keep private keys, mnemonics, and wallet passwords in environment variables or a secure secrets manager. Do not commit them to source control.
-
 ## Usage
+
+### Run from installed package
+
+```bash
+sun-mcp-server
+```
+
+### Run in HTTP MCP mode
+
+```bash
+sun-mcp-server --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath /mcp
+```
+
+### Run from source
 
 ```bash
 # Development mode
@@ -746,17 +754,13 @@ npm run dev
 # Build
 npm run build
 
-# Start server
+# Start built server
 npm start
 ```
 
-To run in HTTP MCP mode:
-
-```bash
-npm start -- --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath /mcp
-```
-
 ## Client Integration
+
+Use this section after the server already runs locally or after you know which install mode you want to use.
 
 ### Claude Desktop
 
@@ -766,11 +770,12 @@ npm start -- --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath 
 {
   "mcpServers": {
     "sun-mcp-server": {
-      "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/sun-mcp-server/dist/src/server.js"],
+      "command": "sun-mcp-server",
+      "args": [],
       "env": {
         "OPENAPI_SPEC_PATH": "/ABSOLUTE/PATH/TO/sun-mcp-server/specs/sunio-open-api.json",
-        "TARGET_API_BASE_URL": "https://open.sun.io"
+        "TARGET_API_BASE_URL": "https://open.sun.io",
+        "TRON_NETWORK": "mainnet"
       },
       "enabled": true
     }
@@ -787,11 +792,12 @@ npm start -- --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath 
   "servers": [
     {
       "name": "sun-mcp-server",
-      "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/sun-mcp-server/dist/src/server.js"],
+      "command": "sun-mcp-server",
+      "args": [],
       "env": {
         "OPENAPI_SPEC_PATH": "/ABSOLUTE/PATH/TO/sun-mcp-server/specs/sunio-open-api.json",
-        "TARGET_API_BASE_URL": "https://open.sun.io"
+        "TARGET_API_BASE_URL": "https://open.sun.io",
+        "TRON_NETWORK": "mainnet"
       }
     }
   ]
@@ -800,6 +806,7 @@ npm start -- --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath 
 
 ## Security Considerations
 
+- Keep private keys, mnemonics, and wallet passwords in environment variables or a secure secrets manager. Do not commit them to source control.
 - Keep API credentials and sensitive headers in environment variables, not in shared JSON config files.
 - Review and restrict custom headers before production use.
 - Test operation filters (`whitelist`/`blacklist`) before exposing the server to production workflows.

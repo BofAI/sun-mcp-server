@@ -4,7 +4,7 @@
  * Usage: npm run script:test-sunpump-sell
  *
  * Make sure to:
- * 1. Configure wallet: npm run wallet:setup
+ * 1. Configure wallet env: npm run wallet:setup
  * 2. Have meme token balance in wallet
  * 3. Update TOKEN_ADDRESS to a valid SunPump token you own
  */
@@ -13,7 +13,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { SunKit } from "@bankofai/sun-kit";
-import { isLocalWalletConfigured, getWalletAddress, initWallet, getWallet } from "../src/wallet";
+import { getWalletAddress, initWallet, getWallet, isWalletConfigured } from "../src/wallet";
 
 const NETWORK = "nile";
 const TOKEN_ADDRESS = "TAsJEbT9URv9TCZukeuuhG21tywNzvn6P5";
@@ -23,13 +23,12 @@ const SLIPPAGE = 0.05; // 5%
 async function main() {
   console.log("=== SunPump Sell Test ===\n");
 
-  if (!isLocalWalletConfigured()) {
+  await initWallet();
+  if (!isWalletConfigured()) {
     console.error("Error: No wallet configured.");
     console.error("Run: npm run wallet:setup");
     process.exit(1);
   }
-
-  await initWallet();
   const wallet = getWallet();
   const kit = new SunKit({ wallet, network: NETWORK });
 

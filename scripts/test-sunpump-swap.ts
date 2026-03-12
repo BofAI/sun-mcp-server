@@ -11,7 +11,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { SunKit, SunPumpTokenState } from "@bankofai/sun-kit";
-import { isLocalWalletConfigured, getWalletAddress, initWallet, getWallet } from "../src/wallet";
+import { getWalletAddress, initWallet, getWallet, isWalletConfigured } from "../src/wallet";
 
 const TRX_ADDRESS = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
 
@@ -25,13 +25,12 @@ const TEST_MODE: "buy" | "sell" | "both" = "sell";
 async function main() {
   console.log("=== SunPump Swap Integration Test ===\n");
 
-  if (!isLocalWalletConfigured()) {
+  await initWallet();
+  if (!isWalletConfigured()) {
     console.error("Error: No wallet configured.");
     console.error("Run: npm run wallet:setup");
     process.exit(1);
   }
-
-  await initWallet();
   const wallet = getWallet();
   const kit = new SunKit({ wallet, network: NETWORK });
 

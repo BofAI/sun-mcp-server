@@ -10,7 +10,7 @@
 
 import "dotenv/config";
 import { SunKit } from "@bankofai/sun-kit";
-import { isLocalWalletConfigured, initWallet, getWallet } from "../src/wallet";
+import { initWallet, getWallet, isWalletConfigured } from "../src/wallet";
 
 const NETWORK = "nile";
 
@@ -25,12 +25,11 @@ const TOKEN_ID = "55";
 const LIQUIDITY = "205051642";
 
 async function main() {
-  if (!isLocalWalletConfigured()) {
+  await initWallet();
+  if (!isWalletConfigured()) {
     console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
     process.exit(1);
   }
-
-  await initWallet();
   const wallet = getWallet();
   const kit = new SunKit({ wallet, network: NETWORK });
 

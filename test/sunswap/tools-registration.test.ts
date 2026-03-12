@@ -21,7 +21,7 @@ jest.mock("@scure/bip32", () => ({
 }));
 
 jest.mock("@bankofai/agent-wallet", () => ({
-  WalletFactory: jest.fn(() => ({})),
+  resolveWalletProvider: jest.fn(() => ({})),
   SecureKVStore: class SecureKVStoreMock {},
   TronWallet: class TronWalletMock {},
   loadConfig: jest.fn(() => ({ wallets: {} })),
@@ -88,8 +88,6 @@ describe("sunswap tool registration", () => {
       "sunswap_v4_increase_liquidity",
       "sunswap_v4_decrease_liquidity",
       "sunswap_v4_collect",
-      "sunswap_list_wallets",
-      "sunswap_select_wallet",
       "sunswap_swap",
     ];
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env ts-node
 /**
- * Script to configure LocalWallet for sun-mcp-server.
+ * Script to configure an env-based wallet for sun-mcp-server.
  *
  * Usage:
- *   npx ts-node scripts/setup-local-wallet.ts [command]
+ *   npx ts-node scripts/setup-env-wallet.ts [command]
  *
  * Commands:
  *   generate       Generate a new mnemonic and derive address
@@ -40,12 +40,12 @@ async function prompt(rl: readline.Interface, question: string): Promise<string>
 }
 
 function generateMnemonic(): string {
-  return bip39.generateMnemonic(wordlist, 128); // 12 words
+  return bip39.generateMnemonic(wordlist, 128);
 }
 
 function deriveFromMnemonic(
   mnemonic: string,
-  accountIndex = 0
+  accountIndex = 0,
 ): { privateKey: string; address: string } {
   if (!bip39.validateMnemonic(mnemonic, wordlist)) {
     throw new Error("Invalid mnemonic");
@@ -102,26 +102,26 @@ function writeEnvFile(env: Record<string, string>): void {
 }
 
 async function cmdGenerate(): Promise<void> {
-  console.log("\n🔑 Generating new wallet...\n");
+  console.log("\nGenerating new wallet...\n");
 
   const mnemonic = generateMnemonic();
   const { privateKey, address } = deriveFromMnemonic(mnemonic, 0);
 
   console.log("=".repeat(60));
-  console.log("⚠️  IMPORTANT: Save this mnemonic phrase securely!");
+  console.log("IMPORTANT: Save this mnemonic phrase securely.");
   console.log("=".repeat(60));
-  console.log("\n📝 Mnemonic (12 words):");
+  console.log("\nMnemonic (12 words):");
   console.log(`   ${mnemonic}\n`);
-  console.log("🔐 Private Key:");
+  console.log("Private Key:");
   console.log(`   ${privateKey}\n`);
-  console.log("📍 Address (m/44'/195'/0'/0/0):");
+  console.log("Address (m/44'/195'/0'/0/0):");
   console.log(`   ${address}\n`);
   console.log("=".repeat(60));
 
-  console.log("\n📋 To use this wallet, add one of the following to your .env file:\n");
+  console.log("\nTo use this wallet, add one of the following to your .env file:\n");
   console.log("Option 1 - Using mnemonic (recommended):");
   console.log(`   TRON_MNEMONIC="${mnemonic}"`);
-  console.log(`   TRON_ACCOUNT_INDEX=0\n`);
+  console.log("   TRON_MNEMONIC_ACCOUNT_INDEX=0\n");
   console.log("Option 2 - Using private key:");
   console.log(`   TRON_PRIVATE_KEY=${privateKey}\n`);
 }
@@ -130,7 +130,7 @@ async function cmdFromMnemonic(): Promise<void> {
   const rl = createReadline();
 
   try {
-    console.log("\n🔑 Derive wallet from mnemonic\n");
+    console.log("\nDerive wallet from mnemonic\n");
 
     const mnemonic = await prompt(rl, "Enter your mnemonic (12/24 words): ");
     const indexStr = await prompt(rl, "Account index [0]: ");
@@ -143,9 +143,9 @@ async function cmdFromMnemonic(): Promise<void> {
     const { privateKey, address } = deriveFromMnemonic(mnemonic, accountIndex);
 
     console.log("\n" + "=".repeat(60));
-    console.log(`📍 Derived Address (m/44'/195'/0'/0/${accountIndex}):`);
+    console.log(`Derived Address (m/44'/195'/0'/0/${accountIndex}):`);
     console.log(`   ${address}\n`);
-    console.log("🔐 Private Key:");
+    console.log("Private Key:");
     console.log(`   ${privateKey}\n`);
     console.log("=".repeat(60));
 
@@ -154,9 +154,9 @@ async function cmdFromMnemonic(): Promise<void> {
       const env = readEnvFile();
       delete env.TRON_PRIVATE_KEY;
       env.TRON_MNEMONIC = mnemonic;
-      env.TRON_ACCOUNT_INDEX = accountIndex.toString();
+      env.TRON_MNEMONIC_ACCOUNT_INDEX = accountIndex.toString();
       writeEnvFile(env);
-      console.log("✅ Saved to .env file");
+      console.log("Saved to .env file");
     }
   } finally {
     rl.close();
@@ -167,7 +167,7 @@ async function cmdFromKey(): Promise<void> {
   const rl = createReadline();
 
   try {
-    console.log("\n🔑 Validate private key\n");
+    console.log("\nValidate private key\n");
 
     const privateKey = await prompt(rl, "Enter your private key: ");
     const cleanKey = privateKey.startsWith("0x") ? privateKey.slice(2) : privateKey;
@@ -175,18 +175,18 @@ async function cmdFromKey(): Promise<void> {
     const address = addressFromPrivateKey(cleanKey);
 
     console.log("\n" + "=".repeat(60));
-    console.log("✅ Valid private key");
-    console.log(`📍 Address: ${address}\n`);
+    console.log("Valid private key");
+    console.log(`Address: ${address}\n`);
     console.log("=".repeat(60));
 
     const save = await prompt(rl, "\nSave to .env file? [y/N]: ");
     if (save.toLowerCase() === "y") {
       const env = readEnvFile();
       delete env.TRON_MNEMONIC;
-      delete env.TRON_ACCOUNT_INDEX;
+      delete env.TRON_MNEMONIC_ACCOUNT_INDEX;
       env.TRON_PRIVATE_KEY = cleanKey;
       writeEnvFile(env);
-      console.log("✅ Saved to .env file");
+      console.log("Saved to .env file");
     }
   } finally {
     rl.close();
@@ -194,7 +194,7 @@ async function cmdFromKey(): Promise<void> {
 }
 
 async function cmdShow(): Promise<void> {
-  console.log("\n📋 Current wallet configuration\n");
+  console.log("\nCurrent wallet configuration\n");
 
   const env = readEnvFile();
 
@@ -205,26 +205,26 @@ async function cmdShow(): Promise<void> {
       console.log(`Address: ${address}`);
       console.log(`Private Key: ${env.TRON_PRIVATE_KEY.substring(0, 8)}...`);
     } catch {
-      console.log("❌ Invalid TRON_PRIVATE_KEY in .env");
+      console.log("Invalid TRON_PRIVATE_KEY in .env");
     }
   } else if (env.TRON_MNEMONIC) {
     try {
-      const accountIndex = parseInt(env.TRON_ACCOUNT_INDEX || "0", 10);
+      const accountIndex = parseInt(env.TRON_MNEMONIC_ACCOUNT_INDEX || "0", 10);
       const { address } = deriveFromMnemonic(env.TRON_MNEMONIC, accountIndex);
       console.log("Mode: Mnemonic");
       console.log(`Address: ${address}`);
       console.log(`Account Index: ${accountIndex}`);
       console.log(`Mnemonic: ${env.TRON_MNEMONIC.split(" ").slice(0, 3).join(" ")}...`);
     } catch {
-      console.log("❌ Invalid TRON_MNEMONIC in .env");
+      console.log("Invalid TRON_MNEMONIC in .env");
     }
   } else {
-    console.log("⚠️  No wallet configured in .env");
-    console.log("Run: npx ts-node scripts/setup-local-wallet.ts generate");
+    console.log("No wallet configured in .env");
+    console.log("Run: npx ts-node scripts/setup-env-wallet.ts generate");
   }
 
-  if (env.TRONGRID_API_KEY || env.TRON_GRID_API_KEY) {
-    console.log(`\nTronGrid API Key: ${(env.TRONGRID_API_KEY || env.TRON_GRID_API_KEY)?.substring(0, 8)}...`);
+  if (env.TRON_GRID_API_KEY) {
+    console.log(`\nTronGrid API Key: ${env.TRON_GRID_API_KEY.substring(0, 8)}...`);
   }
 
   console.log("");
@@ -234,7 +234,7 @@ async function cmdSave(): Promise<void> {
   const rl = createReadline();
 
   try {
-    console.log("\n💾 Save wallet configuration to .env\n");
+    console.log("\nSave wallet configuration to .env\n");
 
     const mode = await prompt(rl, "Mode [1=private key, 2=mnemonic]: ");
 
@@ -246,7 +246,7 @@ async function cmdSave(): Promise<void> {
       addressFromPrivateKey(cleanKey);
 
       delete env.TRON_MNEMONIC;
-      delete env.TRON_ACCOUNT_INDEX;
+      delete env.TRON_MNEMONIC_ACCOUNT_INDEX;
       env.TRON_PRIVATE_KEY = cleanKey;
     } else if (mode === "2") {
       const mnemonic = await prompt(rl, "Enter mnemonic: ");
@@ -257,7 +257,7 @@ async function cmdSave(): Promise<void> {
 
       delete env.TRON_PRIVATE_KEY;
       env.TRON_MNEMONIC = mnemonic;
-      env.TRON_ACCOUNT_INDEX = accountIndex.toString();
+      env.TRON_MNEMONIC_ACCOUNT_INDEX = accountIndex.toString();
     } else {
       console.log("Invalid mode");
       return;
@@ -265,11 +265,11 @@ async function cmdSave(): Promise<void> {
 
     const apiKey = await prompt(rl, "TronGrid API Key (optional, press Enter to skip): ");
     if (apiKey) {
-      env.TRONGRID_API_KEY = apiKey;
+      env.TRON_GRID_API_KEY = apiKey;
     }
 
     writeEnvFile(env);
-    console.log("\n✅ Configuration saved to .env");
+    console.log("\nConfiguration saved to .env");
 
     await cmdShow();
   } finally {
@@ -279,7 +279,7 @@ async function cmdSave(): Promise<void> {
 
 function printUsage(): void {
   console.log(`
-Usage: npx ts-node scripts/setup-local-wallet.ts [command]
+Usage: npx ts-node scripts/setup-env-wallet.ts [command]
 
 Commands:
   generate       Generate a new mnemonic and show derived address
@@ -289,9 +289,9 @@ Commands:
   save           Save wallet configuration to .env (interactive)
 
 Examples:
-  npx ts-node scripts/setup-local-wallet.ts generate
-  npx ts-node scripts/setup-local-wallet.ts show
-  npx ts-node scripts/setup-local-wallet.ts save
+  npx ts-node scripts/setup-env-wallet.ts generate
+  npx ts-node scripts/setup-env-wallet.ts show
+  npx ts-node scripts/setup-env-wallet.ts save
 `);
 }
 

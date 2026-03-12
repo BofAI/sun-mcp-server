@@ -1,12 +1,13 @@
 {
   "name": "@bankofai/sun-mcp-server",
-  "version": "1.0.1",
+  "version": "1.1.0-beta.0",
   "description": "An MCP server for the SUN.IO (SUNSWAP) ecosystem",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "commonjs",
   "scripts": {
-    "build": "tsc",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc",
     "start": "node dist/src/server.js",
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "lint": "eslint .",
@@ -27,9 +28,9 @@
     "script:test-sunpump-swap": "ts-node scripts/test-sunpump-swap.ts",
     "test:v4": "jest --testPathPattern=positionsV4",
     "test:sunpump": "jest --testPathPattern=sunpump",
-    "wallet:setup": "ts-node scripts/setup-local-wallet.ts",
-    "wallet:generate": "ts-node scripts/setup-local-wallet.ts generate",
-    "wallet:show": "ts-node scripts/setup-local-wallet.ts show"
+    "wallet:setup": "ts-node scripts/setup-env-wallet.ts",
+    "wallet:generate": "ts-node scripts/setup-env-wallet.ts generate",
+    "wallet:show": "ts-node scripts/setup-env-wallet.ts show"
   },
   "bin": {
     "sun-mcp-server": "./bin/sun-mcp-server"
@@ -76,7 +77,7 @@
   "dependencies": {
     "@bankofai/sun-kit": "^0.1.0-beta.1",
     "@apidevtools/swagger-parser": "^10.1.0",
-    "@bankofai/agent-wallet": "^2.0.0-beta.0",
+    "@bankofai/agent-wallet": "^2.2.0-beta.2",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@scure/bip32": "^2.0.1",
     "@scure/bip39": "^2.0.1",

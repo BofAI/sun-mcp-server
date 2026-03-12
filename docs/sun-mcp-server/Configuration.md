@@ -26,17 +26,22 @@ Default sample configuration in `config.json`:
 
 Write operations (swaps, liquidity management) require a TRON wallet.
 
+Configure exactly one wallet source. If more than one is set, startup will fail. If none are set, the server runs in read-only mode.
+
 | Variable | Description |
 |----------|-------------|
 | `TRON_PRIVATE_KEY` | Hex private key (with or without `0x` prefix) |
 | `TRON_MNEMONIC` | BIP-39 mnemonic phrase (12 or 24 words) |
-| `TRON_ACCOUNT_INDEX` | HD wallet derivation index (default: `0`) |
-| `TRONGRID_API_KEY` / `TRON_GRID_API_KEY` | Optional TronGrid API key |
+| `TRON_MNEMONIC_ACCOUNT_INDEX` | HD wallet derivation index for `TRON_MNEMONIC` (default: `0`) |
+| `AGENT_WALLET_PASSWORD` | Password for an existing agent-wallet keystore |
+| `AGENT_WALLET_DIR` | Optional path to the agent-wallet secrets directory |
+| `TRON_GRID_API_KEY` | Optional TronGrid API key |
 | `TRON_RPC_URL` | Override for TRON RPC endpoint |
+| `TRON_NETWORK` | Optional default network for SunKit (`mainnet` by default) |
 
-**Priority**: `TRON_PRIVATE_KEY` > `TRON_MNEMONIC` > AgentWallet provider.
+The server always resolves the wallet through `@bankofai/agent-wallet`. `TRON_PRIVATE_KEY` and `TRON_MNEMONIC` are mapped into the agent-wallet provider environment before resolving the active wallet.
 
-**Security**: Keep private keys and mnemonics in environment variables or a secret manager. Never commit them to source control.
+**Security**: Keep private keys, mnemonics, and wallet passwords in environment variables or a secret manager. Never commit them to source control.
 
 ## SUNSWAP Contract Addresses
 
