@@ -36,6 +36,24 @@ jest.mock("@bankofai/agent-wallet", () => ({
   saveConfig: jest.fn(),
 }));
 
+jest.mock("@bankofai/sun-kit", () => ({
+  createReadonlyTronWeb: jest.fn().mockResolvedValue({}),
+  getNetworkConfig: jest.fn((network: string) => {
+    if (network === "nile" || network === "testnet") {
+      return {
+        fullNode: "https://nile.trongrid.io",
+        solidityNode: "https://nile.trongrid.io",
+        eventServer: "https://nile.trongrid.io",
+      };
+    }
+    return {
+      fullNode: "https://api.trongrid.io",
+      solidityNode: "https://api.trongrid.io",
+      eventServer: "https://api.trongrid.io",
+    };
+  }),
+}));
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------

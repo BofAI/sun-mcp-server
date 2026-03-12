@@ -28,6 +28,11 @@ const mockReadonlyTronWeb = {
 
 jest.mock("@bankofai/sun-kit", () => ({
   createReadonlyTronWeb: jest.fn(async () => mockReadonlyTronWeb),
+  getNetworkConfig: jest.fn(() => ({
+    fullNode: "https://api.trongrid.io",
+    solidityNode: "https://api.trongrid.io",
+    eventServer: "https://api.trongrid.io",
+  })),
 }));
 
 jest.mock("tronweb", () => ({
