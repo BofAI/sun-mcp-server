@@ -17,9 +17,9 @@ import { initWallet, getWallet, isWalletConfigured } from "../src/wallet";
 const NETWORK = "nile";
 const ROUTER = SUNSWAP_V2_NILE_ROUTER;
 const TOKEN_A = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
-const TOKEN_B = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
+const TOKEN_B = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
 /** LP 数量（18 位精度 raw，可按实际持仓改） */
-const LIQUIDITY = "156378178664";
+const LIQUIDITY = "209776338";
 
 async function main() {
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);

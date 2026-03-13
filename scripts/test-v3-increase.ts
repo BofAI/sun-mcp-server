@@ -1,11 +1,11 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 V3 Decrease Liquidity（自动 amountMin 计算）。
+ * 本地测试 V3 Increase Liquidity（追加流动性）。
  *
  * 使用前请在项目根目录配置 .env：
  *   TRON_PRIVATE_KEY=你的十六进制私钥
  *
- * 运行：npx ts-node scripts/test-v3-decrease.ts
+ * 运行：npx ts-node scripts/test-v3-increase.ts
  */
 
 import "dotenv/config";
@@ -17,12 +17,10 @@ const NETWORK = "nile";
 const PM = SUNSWAP_V3_NILE_POSITION_MANAGER;
 const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
 const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
-const FEE = 3000;
+const FEE = 500;
 
-/** 替换为你实际持有的 position tokenId */
+/** 替换为你实际持有的 V3 position tokenId */
 const TOKEN_ID = "519";
-/** 要移除的 liquidity 数量 */
-const LIQUIDITY = "71781681482149";
 
 async function main() {
   await initWallet();
@@ -33,29 +31,33 @@ async function main() {
   const wallet = getWallet();
   const kit = new SunKit({ wallet, network: NETWORK });
 
-  console.log("=== V3 Decrease Liquidity Test ===");
+  console.log("=== V3 Increase Liquidity Test ===");
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);
   console.log("network:", NETWORK);
   console.log("positionManager:", PM);
   console.log("tokenId:", TOKEN_ID);
-  console.log("liquidity:", LIQUIDITY);
   console.log("token0:", TOKEN_0, "token1:", TOKEN_1, "fee:", FEE);
   console.log("");
 
+  console.log("--- Increase liquidity ---");
   try {
-    const result = await kit.decreaseLiquidityV3({
+    const result = await kit.increaseLiquidityV3({
       network: NETWORK,
       positionManagerAddress: PM,
       tokenId: TOKEN_ID,
-      liquidity: LIQUIDITY,
+      token0: TOKEN_0,
+      token1: TOKEN_1,
+      fee: FEE,
+      amount0Desired: "5000000",
     });
 
-    console.log("Decrease result:");
+    console.log("Increase result:");
     console.log(JSON.stringify(result, null, 2));
-  } catch (err: any) {
-    console.error("Error name:", err?.name);
-    console.error("Error message:", err?.message);
-    if (err?.stack) console.error("Stack:\n", err.stack);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    if (error?.stack) console.error("Stack:\n", error.stack);
     process.exit(1);
   }
 }

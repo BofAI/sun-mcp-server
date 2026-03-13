@@ -17,7 +17,7 @@ const NETWORK = "nile";
 const PM = SUNSWAP_V3_NILE_POSITION_MANAGER;
 
 /** 替换为你实际持有的 position tokenId */
-const TOKEN_ID = "1";
+const TOKEN_ID = "519";
 
 async function main() {
   await initWallet();

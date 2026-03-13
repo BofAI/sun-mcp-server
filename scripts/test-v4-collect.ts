@@ -19,7 +19,7 @@ const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
 const FEE = 500;
 
 /** 替换为你实际持有的 V4 position tokenId */
-const TOKEN_ID = "56";
+const TOKEN_ID = "59";
 
 async function main() {
   await initWallet();
