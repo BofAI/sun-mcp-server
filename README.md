@@ -11,10 +11,9 @@ An MCP server for AI-driven DeFi operations on the TRON network through the SUN.
 
 - [Overview](#overview)
 - [Quick Start](#quick-start)
-  - [Option A: stdio (Recommended)](#option-a-stdio-recommended)
-  - [Option B: Hosted Service](#option-b-hosted-service)
-  - [Option C: Self-Hosted HTTP](#option-c-self-hosted-http)
-  - [Wallet Configuration (Optional)](#wallet-configuration-optional)
+  - [Official Hosted MCP (Read-Only)](#official-hosted-mcp-read-only)
+  - [Local Hosted MCP](#local-hosted-mcp)
+    - [Wallet Configuration (Optional)](#wallet-configuration-optional)
   - [Example Prompts](#example-prompts)
 - [Client Integration Guide](#client-integration-guide)
   - [Claude Desktop](#claude-desktop)
@@ -58,97 +57,94 @@ If no wallet is configured, the server still works in read-only mode.
 
 ## Quick Start
 
-Pick the option that fits your situation. All three get you to the same result: Claude (or any MCP client) can talk to SUN.IO.
+### Official Hosted MCP (Read-Only)
 
-### Option A: stdio (Recommended)
+The fastest way to try SUN MCP Server — no installation, no configuration. BankOfAI hosts a public read-only instance.
 
-The fastest way to get started. Your MCP client launches the server automatically — no need to run anything yourself.
+**Point your client to the official endpoint:**
 
-**Step 1 — Install the package:**
+```bash
+claude mcp add --transport http sun-mcp-server https://sun-mcp-server.bankofai.io/mcp
+```
+
+This gives you access to all read-only tools: token prices, pool data, positions, quoting, and more. No wallet is configured on the hosted instance, so write operations (swaps, liquidity) are not available.
+
+**curl example** — call the `getPrice` tool via MCP JSON-RPC:
+
+```bash
+curl -X POST https://sun-mcp-server.bankofai.io/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "getPrice",
+      "arguments": {
+        "tokenAddress": "TKkeiboTkxXKJpbmVFbv4a8ov5rAfRDMf9"
+      }
+    }
+  }'
+```
+
+Response (SSE format):
+
+```
+event: message
+data: {
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"msg\":\"SUCCESS\",\"code\":0,\"data\":{\"TKkeiboTkxXKJpbmVFbv4a8ov5rAfRDMf9\":{\"quote\":{\"USD\":{\"price\":\"37.513242926312\"}}}},\"status\":{\"error_code\":0}}"
+      }
+    ]
+  },
+  "jsonrpc": "2.0",
+  "id": 1
+}
+```
+
+> No local installation needed. Works with any MCP client that supports Streamable HTTP.
+
+### Local Hosted MCP
+
+Run the server locally with full capabilities — including write operations if you configure a wallet.
+
+**Install:**
 
 ```bash
 npm install -g @bankofai/sun-mcp-server
 ```
 
-**Step 2 — Register it with your MCP client:**
-
-```bash
-# Read-only (no wallet)
-claude mcp add sun-mcp-server sun-mcp-server
-
-# With wallet and runtime settings
-claude mcp add sun-mcp-server sun-mcp-server \
-  -e TRON_PRIVATE_KEY=your_private_key 
-```
-
-That's it. Claude will start `sun-mcp-server` in the background whenever it needs SUN.IO tools, and stop it when done. Environment variables passed via `-e` are injected into the server process automatically.
-
-> You can also skip the global install and use `npx`:
-> ```bash
-> claude mcp add sun-mcp-server -- npx -y @bankofai/sun-mcp-server
-> ```
-
-### Option B: Hosted Service
-
-Use this if BankOfAI has provided you with a hosted endpoint URL.
-
-**One step — point your client to the URL:**
-
-```bash
-claude mcp add --transport http sun-mcp-server https://YOUR_HOSTED_MCP_URL/mcp
-```
-
-Replace `YOUR_HOSTED_MCP_URL` with the actual URL from your BankOfAI connection details. No local installation needed.
-
-### Option C: Self-Hosted HTTP
-
-Use this if you want to run a persistent HTTP server — for example, to share one MCP endpoint across a team, or to deploy in Docker / Kubernetes.
-
-**Step 1 — Install the package:**
-
-```bash
-npm install -g @bankofai/sun-mcp-server
-```
-
-**Step 2 — Start the server:**
-
-```bash
-sun-mcp-server --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath /mcp
-```
-
-**Step 3 — Register it with your MCP client:**
-
-```bash
-claude mcp add --transport http sun-mcp-server http://127.0.0.1:8080/mcp
-```
-
-> For external access (e.g. from other machines or containers), bind to `0.0.0.0` instead of `127.0.0.1`.
-
-### Wallet Configuration (Optional)
+#### Wallet Configuration
 
 Without a wallet, the server works in **read-only mode** — you can query prices, pools, positions, and more.
 
 To enable write operations (swaps, liquidity, contract calls), set exactly **one** wallet source:
 
-**Option 1: Private Key** — simplest, pass a hex private key directly.
+**Option 1 (Recommended): [Agent Wallet](https://github.com/BofAI/agent-wallet#cli)** — password-protected encrypted keystore, purpose-built for AI agents. Private keys are never stored in plaintext.
+
+```bash
+export AGENT_WALLET_PASSWORD=your_wallet_password
+export AGENT_WALLET_DIR=/absolute/path/to/.agent   # optional, defaults to ~/.agent
+```
+
+**Option 2: Private Key** — pass a hex private key directly.
 
 ```bash
 export TRON_PRIVATE_KEY=your_private_key
 ```
 
-**Option 2: Mnemonic** — derive a wallet from a BIP-39 seed phrase.
+**Option 3: Mnemonic** — derive a wallet from a BIP-39 seed phrase.
 
 ```bash
 export TRON_MNEMONIC="word1 word2 word3 ..."
 export TRON_MNEMONIC_ACCOUNT_INDEX=0   # optional, default 0
 ```
 
-**Option 3: [Agent Wallet](https://github.com/BofAI/agent-wallet#cli)** — password-protected keystore managed by the `@bankofai/agent-wallet` CLI.
-
-```bash
-export AGENT_WALLET_PASSWORD=your_wallet_password
-export AGENT_WALLET_DIR=/absolute/path/to/.agent   # optional, defaults to ~/.agent
-```
+> **Security warning:** Option 2 and 3 store keys in plaintext (environment variables / `.env` files), which carries a risk of key leakage. Use them only with small amounts of funds for testing. For production or larger balances, use Agent Wallet (Option 1).
 
 Optional runtime settings:
 
@@ -160,9 +156,39 @@ export TRON_RPC_URL=https://your-rpc     # custom RPC endpoint
 
 The server auto-loads `.env` files via `dotenv`, so you can put these in a `.env` file instead of exporting them.
 
+**stdio** — the MCP client spawns and manages the server process automatically. No manual server management needed.
+
+```bash
+# Read-only (no wallet)
+claude mcp add sun-mcp-server sun-mcp-server
+
+# With wallet and runtime settings
+claude mcp add sun-mcp-server sun-mcp-server \
+  -e TRON_PRIVATE_KEY=your_private_key
+```
+
+Environment variables passed via `-e` are injected into the server process. Claude starts the server when it needs SUN.IO tools, and stops it when done.
+
+> You can also skip the global install and use `npx`:
+> ```bash
+> claude mcp add sun-mcp-server -- npx -y @bankofai/sun-mcp-server
+> ```
+
+**Streamable HTTP** — run a persistent HTTP server, useful for sharing one endpoint across a team or deploying in Docker / Kubernetes.
+
+```bash
+# Start the server
+sun-mcp-server --transport streamable-http --host 127.0.0.1 --port 8080 --mcpPath /mcp
+
+# Register it with your MCP client
+claude mcp add --transport http sun-mcp-server http://127.0.0.1:8080/mcp
+```
+
+> For external access (e.g. from other machines or containers), bind to `0.0.0.0` instead of `127.0.0.1`.
+
 ### Verify
 
-After any option above, confirm the server is registered:
+Confirm the server is registered:
 
 ```bash
 claude mcp list
