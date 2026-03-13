@@ -32,6 +32,7 @@ An MCP server for AI-driven DeFi operations on the TRON network through the SUN.
   - [Auto-Compute Features](#auto-compute-features)
 - [Troubleshooting](#troubleshooting)
 - [Security Considerations](#security-considerations)
+ - [Local Testing Scripts](#local-testing-scripts)
 
 ## Overview
 
@@ -193,6 +194,36 @@ You should see `sun-mcp-server` in the output. Now just chat with Claude — see
 **Contract interaction:**
 
 - "Read the `slot0` state from this SUNSwap pool contract."
+
+## Local Testing Scripts
+
+For local, end-to-end testing of the underlying `SunKit` / `SunAPI` flows, this repository includes a set of `ts-node` scripts:
+
+- **V2 Liquidity**
+  - `npm run script:test-add-liquidity` — add SUNSwap V2 liquidity
+  - `npm run script:test-remove-liquidity` — remove SUNSwap V2 liquidity
+- **V3 Liquidity**
+  - `npm run script:test-v3-mint` — mint V3 position with auto ticks + single-sided input
+  - `npm run script:test-v3-increase` — increase liquidity for an existing V3 position
+  - `npm run script:test-v3-decrease` — decrease liquidity for an existing V3 position
+  - `npm run script:test-v3-collect` — estimate + collect V3 fees
+- **V4 Liquidity**
+  - `npm run script:test-v4-mint` — mint V4 position (optionally creating pool)
+  - `npm run script:test-v4-increase` — increase V4 position liquidity
+  - `npm run script:test-v4-decrease` — decrease V4 position liquidity
+  - `npm run script:test-v4-collect` — collect V4 fees
+- **SunPump & High-Level Swap**
+  - `npm run script:test-sunpump-buy` — buy meme token via SunPump bonding curve
+  - `npm run script:test-sunpump-sell` — sell meme token via SunPump bonding curve
+  - `npm run script:test-sunpump-swap` — integrated TRX ↔ MemeToken swap via `swap`
+- **OpenAPI / SUN.IO API**
+  - `npm run script:test-openapi` — load and validate the bundled SUN.IO OpenAPI spec
+  - `npm run script:test-openapi -- --fetch` — additionally call `GET /apiv2/price` against `https://open.sun.io`
+- **Aggregated SUNSWAP Tools**
+  - `npm run script:test-sunswap-tools` — exercises `sunswap_get_wallet_address`, `sunswap_get_balances`, `sunswap_get_token_price`, `sunswap_read_contract`, and (optionally) router-based quote/swap and `sunswap_send_contract`.\n
+    - Controlled via environment flags: `ENABLE_SEND_CONTRACT`, `ENABLE_ROUTER_QUOTE`, `ENABLE_SWAP_EXACT_INPUT`, `ENABLE_SWAP`.
+
+All write scripts require a configured wallet (see [Wallet Configuration](#wallet-configuration-optional)) and will broadcast real transactions on the configured TRON network.
 
 ## Client Integration Guide
 

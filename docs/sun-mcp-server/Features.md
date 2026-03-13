@@ -65,6 +65,34 @@ All V3 tools feature intelligent auto-compute:
 - `sunswap_read_contract` — read view/pure functions
 - `sunswap_send_contract` — send state-changing transactions
 
+## Developer Test Scripts
+
+For local, scriptable testing of the SUNSWAP tools and flows, the repo includes several helper scripts:
+
+- **V2 Liquidity**
+  - `npm run script:test-add-liquidity`
+  - `npm run script:test-remove-liquidity`
+- **V3 Liquidity**
+  - `npm run script:test-v3-mint`
+  - `npm run script:test-v3-increase`
+  - `npm run script:test-v3-decrease`
+  - `npm run script:test-v3-collect`
+- **V4 Liquidity**
+  - `npm run script:test-v4-mint`
+  - `npm run script:test-v4-increase`
+  - `npm run script:test-v4-decrease`
+  - `npm run script:test-v4-collect`
+- **SunPump / High-Level Swap**
+  - `npm run script:test-sunpump-buy`
+  - `npm run script:test-sunpump-sell`
+  - `npm run script:test-sunpump-swap`
+- **OpenAPI / SUN.IO API**
+  - `npm run script:test-openapi` (add `-- --fetch` to hit `GET /apiv2/price`)
+- **Aggregated SUNSWAP Tools**
+  - `npm run script:test-sunswap-tools` — exercises wallet, balances, prices, read-contract, and (optionally) router-based quote/swap and `sunswap_send_contract` via environment flags.
+
+These scripts are intended for maintainers and integrators who want end-to-end validation against real TRON networks.
+
 ## V3 Math Engine
 
 The server includes a built-in V3 math engine (`src/sunswap/v3Math.ts`) ported from Uniswap V3 Solidity:

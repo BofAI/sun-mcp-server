@@ -47,6 +47,10 @@ These tools are auto-generated from `specs/sunio-open-api.json`:
 
 ## SUNSWAP Tools
 
+> For local, end-to-end testing of many of these tools, see the helper scripts in the repo:
+> - `npm run script:test-sunswap-tools` for wallet, balances, prices, read/write contract, and router-based flows
+> - V2/V3/V4 liquidity scripts under `scripts/test-*.ts` (see project README for full list)
+
 ### sunswap_get_wallet_address
 
 Get the active TRON wallet address.

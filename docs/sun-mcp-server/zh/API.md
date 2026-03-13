@@ -47,6 +47,10 @@
 
 ## SUNSWAP 工具
 
+> 如需在本地对这些工具做端到端测试，可以使用仓库内提供的脚本：
+> - `npm run script:test-sunswap-tools` 测试钱包、余额、价格、合约读写以及基于路由的流程
+> - V2/V3/V4 流动性脚本位于 `scripts/test-*.ts`（完整列表见项目 README）
+
 ### sunswap_get_wallet_address
 
 获取当前 TRON 钱包地址。

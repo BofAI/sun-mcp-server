@@ -65,6 +65,34 @@
 - `sunswap_read_contract` — 读取合约 view/pure 函数
 - `sunswap_send_contract` — 发送状态变更交易
 
+## 开发者本地测试脚本
+
+仓库内提供了一组 `ts-node` 脚本，方便在本地对各类 SUNSWAP 工具做端到端验证：
+
+- **V2 流动性**
+  - `npm run script:test-add-liquidity`
+  - `npm run script:test-remove-liquidity`
+- **V3 流动性**
+  - `npm run script:test-v3-mint`
+  - `npm run script:test-v3-increase`
+  - `npm run script:test-v3-decrease`
+  - `npm run script:test-v3-collect`
+- **V4 流动性**
+  - `npm run script:test-v4-mint`
+  - `npm run script:test-v4-increase`
+  - `npm run script:test-v4-decrease`
+  - `npm run script:test-v4-collect`
+- **SunPump / 高层兑换**
+  - `npm run script:test-sunpump-buy`
+  - `npm run script:test-sunpump-sell`
+  - `npm run script:test-sunpump-swap`
+- **OpenAPI / SUN.IO API**
+  - `npm run script:test-openapi`（加上 `-- --fetch` 可测试 `GET /apiv2/price` 实际接口）
+- **SUNSWAP 工具综合脚本**
+  - `npm run script:test-sunswap-tools` — 统一测试钱包地址、余额、价格、合约只读，以及（可选）路由报价/兑换和 `sunswap_send_contract`，通过环境变量开关控制。
+
+这些脚本适用于维护者和集成方，用于在真实 TRON 网络上做回归和联调。
+
 ## V3 数学引擎
 
 服务器内置了从 Uniswap V3 Solidity 移植的 V3 数学引擎（`src/sunswap/v3Math.ts`）：
