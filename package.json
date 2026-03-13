@@ -29,6 +29,7 @@
     "script:test-sunpump-sell": "ts-node scripts/test-sunpump-sell.ts",
     "script:test-sunpump-swap": "ts-node scripts/test-sunpump-swap.ts",
     "script:test-openapi": "ts-node scripts/test-openapi.ts",
+    "script:test-openapi-tools": "ts-node scripts/test-openapi-tools.ts",
     "test:v4": "jest --testPathPattern=positionsV4",
     "test:sunpump": "jest --testPathPattern=sunpump",
     "wallet:setup": "ts-node scripts/setup-env-wallet.ts",
