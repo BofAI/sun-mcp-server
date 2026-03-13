@@ -34,26 +34,14 @@ An MCP server for AI-driven DeFi operations on the TRON network through the SUN.
 
 ## Overview
 
-`@bankofai/sun-mcp-server` is an MCP server for the SUN.IO ecosystem on TRON.
+Connect any AI client to the TRON DeFi ecosystem through a single MCP endpoint. With `@bankofai/sun-mcp-server`, your AI agent can:
 
-It combines two capability layers:
+- **Query** — token prices, pool stats, liquidity positions, farming rewards, protocol metrics
+- **Quote** — swap routes and price impact across SUNSwap V2, V3, and V4
+- **Execute** — token swaps, liquidity add/remove, position management (wallet required)
+- **Contract** — read from or write to arbitrary TRON smart contracts
 
-- Dynamic OpenAPI tools generated from the SUN.IO API specification
-- Higher-level wallet-aware tools built on top of `@bankofai/sun-kit`
-
-In practice, this gives AI clients one MCP endpoint that can:
-
-- Query SUN.IO market, pool, token, protocol, farm, and position data
-- Quote swaps and token prices
-- Execute swaps and liquidity actions on SUNSwap V2, V3, and V4
-- Read from or write to arbitrary TRON contracts when needed
-
-The server supports two transports:
-
-- `stdio` for local MCP clients
-- `streamable-http` for remote or self-hosted MCP deployments
-
-If no wallet is configured, the server still works in read-only mode.
+The server supports **stdio** (local) and **Streamable HTTP** (remote) transports. Without a wallet configured, it runs in read-only mode — safe for exploration and data queries.
 
 ## Quick Start
 
