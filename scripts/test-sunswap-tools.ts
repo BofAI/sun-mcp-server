@@ -1,35 +1,35 @@
 #!/usr/bin/env npx ts-node
 /**
- * 综合测试 SUNSWAP 自定义 tools 背后的 SunKit / SunAPI 方法。
+ * Aggregate test for SUNSWAP custom tools backed by SunKit / SunAPI.
  *
- * 覆盖的工具（对应 README 中的 tools）：
+ * Covered tools (matching the tools listed in the README):
  * - sunswap_get_wallet_address / sunswap_get_balances
  * - sunswap_get_token_price
  * - sunswap_read_contract
- * - sunswap_send_contract   （默认关闭，需显式开启）
- * - sunswap_quote_exact_input（默认关闭，需要你自己填 router / args）
- * - sunswap_swap_exact_input （默认关闭，需要你自己填 router / args）
- * - sunswap_swap            （默认关闭，以免误交易，可参考 SunPump 脚本）
+ * - sunswap_send_contract   (disabled by default; must be explicitly enabled)
+ * - sunswap_quote_exact_input (disabled by default; you must provide router / args)
+ * - sunswap_swap_exact_input  (disabled by default; you must provide router / args)
+ * - sunswap_swap              (disabled by default to avoid accidental trades; see SunPump scripts)
  *
- * 另外，V2/V3/V4 流动性、SunPump、OpenAPI 等已有专门脚本：
+ * In addition, there are dedicated scripts for V2/V3/V4 liquidity, SunPump, and OpenAPI:
  * - V2: test-add-liquidity.ts / test-remove-liquidity.ts
  * - V3: test-v3-mint.ts / test-v3-increase.ts / test-v3-decrease.ts / test-v3-collect.ts
  * - V4: test-v4-mint.ts / test-v4-increase.ts / test-v4-decrease.ts / test-v4-collect.ts
  * - SunPump: test-sunpump-buy.ts / test-sunpump-sell.ts / test-sunpump-swap.ts
  * - OpenAPI: test-openapi.ts
  *
- * 运行示例：
+ * Example run:
  *   npm run script:test-sunswap-tools
  *
- * 可选开关（通过环境变量控制，默认为只读或跳过写操作）：
- *   ENABLE_SEND_CONTRACT=1        启用 send_contract 示例（会真实发交易！）
- *   ENABLE_ROUTER_QUOTE=1        启用 quote_exact_input 示例
- *   ENABLE_SWAP_EXACT_INPUT=1    启用 swap_exact_input 示例
- *   ENABLE_SWAP=1                启用 swap 示例（建议直接用 SunPump 测试脚本）
+ * Optional flags (controlled via environment variables; default is read-only or skipped):
+ *   ENABLE_SEND_CONTRACT=1        enable send_contract example (performs a real transaction!)
+ *   ENABLE_ROUTER_QUOTE=1        enable quote_exact_input example
+ *   ENABLE_SWAP_EXACT_INPUT=1    enable swap_exact_input example
+ *   ENABLE_SWAP=1                enable swap example (for most cases, prefer SunPump test scripts)
  *
- * 运行前请确保：
- *   1. 已配置钱包：npm run wallet:setup
- *   2. .env 中有 TRON_PRIVATE_KEY 或其他支持的配置
+ * Before running, make sure:
+ *   1. Wallet is configured: npm run wallet:setup
+ *   2. .env contains TRON_PRIVATE_KEY or another supported wallet configuration
  */
 
 import "dotenv/config";
@@ -38,14 +38,14 @@ import { initWallet, getWallet, isWalletConfigured, getWalletAddress } from "../
 
 const NETWORK = process.env.TRON_NETWORK || "nile";
 
-// 常用地址（根据需要自行调整）
+// Common addresses (adjust as needed)
 const TRX_ADDRESS = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
 const USDT_ADDRESS = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
 
 async function main() {
   console.log("=== SUNSWAP Tools Aggregate Test ===\n");
 
-  // 初始化钱包（read-only 的地方也沿用同一个 SunKit 实例）
+  // Initialize wallet (even read-only flows reuse the same SunKit instance)
   await initWallet();
   if (!isWalletConfigured()) {
     console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
@@ -99,7 +99,7 @@ async function main() {
 
   // ---------------------------------------------------------------------------
   // 3) sunswap_read_contract  (readContract)
-  //    示例：读取 USDT.balanceOf(wallet)
+  //    Example: read USDT.balanceOf(wallet)
   // ---------------------------------------------------------------------------
   console.log("=== 3) Read Contract (read_contract) ===");
   try {
@@ -120,15 +120,15 @@ async function main() {
 
   // ---------------------------------------------------------------------------
   // 4) sunswap_send_contract  (sendContractTx)
-  //    默认关闭，避免误触发真实转账。
+  //    Disabled by default to avoid accidental on-chain transfers.
   // ---------------------------------------------------------------------------
   if (process.env.ENABLE_SEND_CONTRACT === "1") {
     console.log("=== 4) Send Contract (send_contract) ===");
     console.log("WARNING: This will send a real transaction. Make sure you understand the call.");
 
-    // 示例：USDT.transfer(to, amount) —— 请自行填写真实地址和金额
+    // Example: USDT.transfer(to, amount) — fill in a real address and amount before enabling
     const RECIPIENT = process.env.TEST_USDT_RECIPIENT || walletAddress;
-    const AMOUNT = process.env.TEST_USDT_AMOUNT || "1"; // raw amount，按 token 精度自行调整
+    const AMOUNT = process.env.TEST_USDT_AMOUNT || "1"; // raw amount; adjust according to token decimals
 
     console.log("Contract:", USDT_ADDRESS);
     console.log("Function: transfer");
@@ -155,13 +155,13 @@ async function main() {
 
   // ---------------------------------------------------------------------------
   // 5) sunswap_quote_exact_input  (quoteExactInput)
-  //    由于各环境 router/ABI 差异较大，这里仅提供一个可配置模板：
-  //    - 使用 ENV 指定 router + functionName + args(JSON)
+  //    Because router/ABI differ by environment, this is a configurable template only:
+  //    - Use ENV to set router + functionName + args (JSON)
   // ---------------------------------------------------------------------------
   if (process.env.ENABLE_ROUTER_QUOTE === "1") {
     console.log("=== 5) Quote Exact Input (quote_exact_input) ===");
     const routerAddress =
-      process.env.SUN_ROUTER_ADDRESS || SUNSWAP_V2_NILE_ROUTER; // 仅作为占位，通常应使用 Smart Router
+      process.env.SUN_ROUTER_ADDRESS || SUNSWAP_V2_NILE_ROUTER; // placeholder; typically use the Smart Router
     const functionName = process.env.ROUTER_QUOTE_FN || "quoteExactInput";
     const rawArgs = process.env.ROUTER_QUOTE_ARGS || "[]";
 
@@ -169,7 +169,9 @@ async function main() {
     try {
       args = JSON.parse(rawArgs);
     } catch {
-      console.error("ROUTER_QUOTE_ARGS 不是有效的 JSON 数组，示例：\"[\\\"0x01\\\", \\\"1000000\\\"]\"");
+      console.error(
+        'ROUTER_QUOTE_ARGS is not a valid JSON array, example: "[\\"0x01\\", \\"1000000\\"]"',
+      );
       process.exit(1);
     }
 
@@ -200,21 +202,21 @@ async function main() {
 
   // ---------------------------------------------------------------------------
   // 6) sunswap_swap_exact_input  (swapExactInput)
-  //    同样通过 ENV 控制 router + functionName + args + value。
+  //    Also controlled via ENV for router + functionName + args + value.
   // ---------------------------------------------------------------------------
   if (process.env.ENABLE_SWAP_EXACT_INPUT === "1") {
     console.log("=== 6) Router Swap Exact Input (swap_exact_input) ===");
     const routerAddress =
-      process.env.SUN_ROUTER_ADDRESS || SUNSWAP_V2_NILE_ROUTER; // 占位，建议改为 Universal Router
+      process.env.SUN_ROUTER_ADDRESS || SUNSWAP_V2_NILE_ROUTER; // placeholder; ideally use the Universal Router
     const functionName = process.env.ROUTER_SWAP_FN || "swapExactInput";
     const rawArgs = process.env.ROUTER_SWAP_ARGS || "[]";
-    const value = process.env.ROUTER_SWAP_VALUE; // 可选 TRX 附带金额（Sun）
+    const value = process.env.ROUTER_SWAP_VALUE; // optional attached TRX amount (Sun)
 
     let args: any[];
     try {
       args = JSON.parse(rawArgs);
     } catch {
-      console.error("ROUTER_SWAP_ARGS 不是有效的 JSON 数组");
+      console.error("ROUTER_SWAP_ARGS is not a valid JSON array");
       process.exit(1);
     }
 
@@ -244,13 +246,13 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 7) sunswap_swap  (高层 swap，内部会根据 SunPump / 路由自动选择路径)
-  //    这里给出一个 TRX -> USDT 的示例模板，默认关闭。
+  // 7) sunswap_swap  (high-level swap that chooses between SunPump / router)
+  //    This uses a TRX -> USDT example template and is disabled by default.
   // ---------------------------------------------------------------------------
   if (process.env.ENABLE_SWAP === "1") {
     console.log("=== 7) High-level Swap (swap) ===");
     const amountIn = process.env.SWAP_TRX_AMOUNT || "1000000"; // 1 TRX
-    const slippage = Number(process.env.SWAP_SLIPPAGE || "0.01"); // 默认 1%
+    const slippage = Number(process.env.SWAP_SLIPPAGE || "0.01"); // default 1%
 
     console.log(`Swapping ${Number(amountIn) / 1e6} TRX -> USDT with slippage ${slippage * 100}%`);
     console.log("WARNING: This will perform a real swap. Press Ctrl+C to cancel.\n");

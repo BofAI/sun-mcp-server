@@ -1,11 +1,11 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 V3 Increase Liquidity（追加流动性）。
+ * Local test for V3 Increase Liquidity (adding liquidity).
  *
- * 使用前请在项目根目录配置 .env：
- *   TRON_PRIVATE_KEY=你的十六进制私钥
+ * Before running, configure .env in the project root:
+ *   TRON_PRIVATE_KEY=your_hex_private_key
  *
- * 运行：npx ts-node scripts/test-v3-increase.ts
+ * Run: npx ts-node scripts/test-v3-increase.ts
  */
 
 import "dotenv/config";
@@ -19,7 +19,7 @@ const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
 const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
 const FEE = 500;
 
-/** 替换为你实际持有的 V3 position tokenId */
+/** Replace with the V3 position tokenId you actually own */
 const TOKEN_ID = "519";
 
 async function main() {

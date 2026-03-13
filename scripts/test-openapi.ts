@@ -1,20 +1,20 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 OpenAPI 规范加载与处理。
+ * Local test for loading and processing the OpenAPI specification.
  *
- * 默认使用 specs/sunio-open-api.json，可通过环境变量覆盖：
+ * By default uses specs/sunio-open-api.json, which can be overridden via env:
  *   OPENAPI_SPEC_PATH=path/to/spec.json
- *   OPENAPI_OVERLAY_PATHS=path/to/overlay.json (可选)
+ *   OPENAPI_OVERLAY_PATHS=path/to/overlay.json (optional)
  *
- * 运行：npx ts-node scripts/test-openapi.ts
+ * Run: npx ts-node scripts/test-openapi.ts
  *
- * 可选：测试真实 API 调用
+ * Optional: test a real API call
  *   npx ts-node scripts/test-openapi.ts --fetch
  */
 
 import path from "path";
 
-// 必须在导入 openapiProcessor 之前设置，否则 config 会因缺少 spec 而退出
+// This must be set before importing openapiProcessor, otherwise config will exit due to missing spec
 process.env.OPENAPI_SPEC_PATH =
   process.env.OPENAPI_SPEC_PATH || path.resolve(process.cwd(), "specs/sunio-open-api.json");
 
@@ -25,7 +25,7 @@ async function main() {
   console.log("OPENAPI_SPEC_PATH:", process.env.OPENAPI_SPEC_PATH);
   console.log("");
 
-  // 动态导入，确保 env 已设置
+  // Dynamic import to ensure env is already set
   const { getProcessedOpenApi } = await import("../src/openapiProcessor");
 
   console.log("--- Step 1: Load and process OpenAPI spec ---");

@@ -1,11 +1,11 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 V4 Mint Position（自动 tickLower/Upper + 单边输入自动算另一边）。
+ * Local test for V4 Mint Position (auto tickLower/Upper + single-sided input auto-calculation).
  *
- * 使用前请在项目根目录配置 .env：
- *   TRON_PRIVATE_KEY=你的十六进制私钥
+ * Before running, configure .env in the project root:
+ *   TRON_PRIVATE_KEY=your_hex_private_key
  *
- * 运行：npx ts-node scripts/test-v4-mint.ts
+ * Run: npx ts-node scripts/test-v4-mint.ts
  */
 
 import "dotenv/config";

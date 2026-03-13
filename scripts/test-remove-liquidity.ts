@@ -1,13 +1,13 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 V2 移除流动性，输出详细错误，便于排查。
+ * Local test for V2 remove-liquidity with detailed error output for debugging.
  *
- * 使用前请在项目根目录配置 .env，例如：
- *   TRON_PRIVATE_KEY=你的十六进制私钥
- * 或 TRON_MNEMONIC=助记词
+ * Before running, configure .env in the project root, for example:
+ *   TRON_PRIVATE_KEY=your_hex_private_key
+ * or TRON_MNEMONIC=your_mnemonic_phrase
  *
- * 运行：npx ts-node scripts/test-remove-liquidity.ts
- * 或： npm run script:test-remove-liquidity
+ * Run: npx ts-node scripts/test-remove-liquidity.ts
+ * or:  npm run script:test-remove-liquidity
  */
 
 import "dotenv/config";
@@ -18,7 +18,7 @@ const NETWORK = "nile";
 const ROUTER = SUNSWAP_V2_NILE_ROUTER;
 const TOKEN_A = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
 const TOKEN_B = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
-/** LP 数量（18 位精度 raw，可按实际持仓改） */
+/** LP token amount (raw, 18 decimals by default; adjust to your actual position) */
 const LIQUIDITY = "209776338";
 
 async function main() {

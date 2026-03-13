@@ -1,11 +1,11 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 V4 Collect Fees（领取手续费）。
+ * Local test for V4 Collect Fees.
  *
- * 使用前请在项目根目录配置 .env：
- *   TRON_PRIVATE_KEY=你的十六进制私钥
+ * Before running, configure .env in the project root:
+ *   TRON_PRIVATE_KEY=your_hex_private_key
  *
- * 运行：npx ts-node scripts/test-v4-collect.ts
+ * Run: npx ts-node scripts/test-v4-collect.ts
  */
 
 import "dotenv/config";
@@ -18,7 +18,7 @@ const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
 const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
 const FEE = 500;
 
-/** 替换为你实际持有的 V4 position tokenId */
+/** Replace with the V4 position tokenId you actually own */
 const TOKEN_ID = "59";
 
 async function main() {

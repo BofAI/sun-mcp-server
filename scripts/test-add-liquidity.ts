@@ -1,12 +1,12 @@
 #!/usr/bin/env npx ts-node
 /**
- * 本地测试 V2 添加流动性，输出详细错误，便于排查 HTTP 500。
+ * Local test for V2 add-liquidity with detailed error output (useful for debugging HTTP 500 issues).
  *
- * 使用前请在项目根目录配置 .env，例如：
- *   TRON_PRIVATE_KEY=你的十六进制私钥
- * 或 TRON_MNEMONIC=助记词
+ * Before running, configure .env in the project root, for example:
+ *   TRON_PRIVATE_KEY=your_hex_private_key
+ * or TRON_MNEMONIC=your_mnemonic_phrase
  *
- * 运行：npx ts-node scripts/test-add-liquidity.ts
+ * Run: npx ts-node scripts/test-add-liquidity.ts
  */
 
 import "dotenv/config";
