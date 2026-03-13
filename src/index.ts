@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { startServer } from './server';
+import { startServer } from "./server";
 
-startServer().catch(error => {
-  console.error('Error starting server:', error);
+startServer().catch((error) => {
+  console.error("Error starting server:", error);
   process.exit(1);
 });

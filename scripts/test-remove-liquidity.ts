@@ -11,15 +11,15 @@
  */
 
 import "dotenv/config";
-import { removeLiquidityV2 } from "../src/sunswap/liquidityV2";
-import { SUNSWAP_V2_NILE_ROUTER } from "../src/sunswap/constants";
+import { SunKit, SUNSWAP_V2_NILE_ROUTER } from "@bankofai/sun-kit";
+import { initWallet, getWallet, isWalletConfigured } from "../src/wallet";
 
 const NETWORK = "nile";
 const ROUTER = SUNSWAP_V2_NILE_ROUTER;
 const TOKEN_A = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
-const TOKEN_B = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
+const TOKEN_B = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
 /** LP 数量（18 位精度 raw，可按实际持仓改） */
-const LIQUIDITY = "156378178664";
+const LIQUIDITY = "209776338";
 
 async function main() {
   console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);
@@ -29,8 +29,16 @@ async function main() {
   console.log("liquidity (LP raw):", LIQUIDITY);
   console.log("");
 
+  await initWallet();
+  if (!isWalletConfigured()) {
+    console.error("No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC.");
+    process.exit(1);
+  }
+
+  const kit = new SunKit({ wallet: getWallet(), network: NETWORK });
+
   try {
-    const result = await removeLiquidityV2({
+    const result = await kit.removeLiquidityV2({
       network: NETWORK,
       routerAddress: ROUTER,
       tokenA: TOKEN_A,

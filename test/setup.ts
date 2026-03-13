@@ -1,5 +1,5 @@
 // Global test setup file
-import { TextDecoder, TextEncoder } from 'util';
+import { TextDecoder, TextEncoder } from "util";
 
 // Add global TextEncoder/TextDecoder for Node.js environment
 global.TextEncoder = TextEncoder;

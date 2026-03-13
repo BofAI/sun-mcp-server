@@ -1,38 +1,44 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getProcessedOpenApi } from '../../src/openapiProcessor';
-import { mapOpenApiToMcpTools } from '../../src/mcpMapper';
-import { executeApiCall } from '../../src/apiClient';
-import path from 'path';
-import { testConfig } from '../fixtures/test-config';
-import type { SpecConfig } from '../../src/config';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { getProcessedOpenApi } from "../../src/openapiProcessor";
+import { mapOpenApiToMcpTools } from "../../src/mcpMapper";
+import { executeApiCall } from "../../src/apiClient";
+import path from "path";
+import { testConfig } from "../fixtures/test-config";
+import type { SpecConfig } from "../../src/config";
 
-jest.mock('../../src/apiClient', () => ({
+jest.mock("../../src/apiClient", () => ({
   executeApiCall: jest.fn().mockImplementation(async (apiCallDetails) => {
-    if (apiCallDetails.operationId === 'getPrice' || apiCallDetails.pathTemplate === '/apiv2/price') {
+    if (
+      apiCallDetails.operationId === "getPrice" ||
+      apiCallDetails.pathTemplate === "/apiv2/price"
+    ) {
       return { success: true, data: testConfig.mockResponses.getPrice, statusCode: 200 };
     }
-    if (apiCallDetails.operationId === 'getPools' || apiCallDetails.pathTemplate === '/apiv2/pools') {
+    if (
+      apiCallDetails.operationId === "getPools" ||
+      apiCallDetails.pathTemplate === "/apiv2/pools"
+    ) {
       return { success: true, data: testConfig.mockResponses.getPools, statusCode: 200 };
     }
     return {
       success: true,
-      data: { code: 0, msg: 'success', data: {} },
+      data: { code: 0, msg: "success", data: {} },
       statusCode: 200,
     };
   }),
 }));
 
 interface TestMcpServer extends McpServer {
-  tools?: Record<string, Function>;
+  tools?: Record<string, (...args: any[]) => any>;
 }
 
 class MockTestTransport {
-  private tools: Record<string, Function> = {};
+  private tools: Record<string, (...args: any[]) => any> = {};
 
   async connect(server: TestMcpServer) {
     if (server.tools) {
       for (const [name, handler] of Object.entries(server.tools)) {
-        if (typeof handler === 'function') {
+        if (typeof handler === "function") {
           this.tools[name] = handler;
         }
       }
@@ -44,19 +50,19 @@ class MockTestTransport {
     if (!this.tools[toolName]) {
       return {
         error: {
-          code: 'tool_not_found',
+          code: "tool_not_found",
           message: `Tool '${toolName}' not found`,
         },
       };
     }
 
     try {
-      return await this.tools[toolName]({ params, request: { id: 'test-request-id' } });
+      return await this.tools[toolName]({ params, request: { id: "test-request-id" } });
     } catch (error: any) {
       return {
         error: {
-          code: error.code || 'tool_error',
-          message: error.message || 'Unknown error',
+          code: error.code || "tool_error",
+          message: error.message || "Unknown error",
         },
       };
     }
@@ -84,8 +90,8 @@ export async function setupTestMcpServer() {
   });
 
   const server = new McpServer({
-    name: 'Test SUN.IO MCP Server',
-    version: '1.0.0',
+    name: "Test SUN.IO MCP Server",
+    version: "1.0.0",
   }) as TestMcpServer;
 
   server.tools = {};
@@ -101,7 +107,7 @@ export async function setupTestMcpServer() {
       }
 
       return {
-        content: [{ type: 'text', text: JSON.stringify(result.data, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify(result.data, null, 2) }],
       };
     };
 
@@ -122,10 +128,14 @@ export async function teardownTestMcpServer(server: TestMcpServer) {
   try {
     await server.close();
   } catch (error) {
-    console.error('Error closing server:', error);
+    console.error("Error closing server:", error);
   }
 }
 
-export async function invokeToolForTest(transport: MockTestTransport, toolName: string, params: any) {
+export async function invokeToolForTest(
+  transport: MockTestTransport,
+  toolName: string,
+  params: any,
+) {
   return transport.callTool(toolName, params);
 }

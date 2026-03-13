@@ -7,12 +7,11 @@
  * 或 TRON_MNEMONIC=助记词
  *
  * 运行：npx ts-node scripts/test-add-liquidity.ts
- * 或： npm run build && node -e "require('./dist/src/sunswap/liquidityV2').addLiquidityV2(...).then(console.log).catch(console.error)"
  */
 
 import "dotenv/config";
-import { addLiquidityV2 } from "../src/sunswap/liquidityV2";
-import { SUNSWAP_V2_NILE_ROUTER } from "../src/sunswap/constants";
+import { SunKit, SUNSWAP_V2_NILE_ROUTER } from "@bankofai/sun-kit";
+import { initWallet, getWallet, isWalletConfigured } from "../src/wallet";
 
 const NETWORK = "nile";
 const ROUTER = SUNSWAP_V2_NILE_ROUTER;
@@ -29,8 +28,16 @@ async function main() {
   console.log("amountADesired:", AMOUNT_A, "amountBDesired:", AMOUNT_B);
   console.log("");
 
+  await initWallet();
+  if (!isWalletConfigured()) {
+    console.error("No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC.");
+    process.exit(1);
+  }
+
+  const kit = new SunKit({ wallet: getWallet(), network: NETWORK });
+
   try {
-    const result = await addLiquidityV2({
+    const result = await kit.addLiquidityV2({
       network: NETWORK,
       routerAddress: ROUTER,
       tokenA: TOKEN_A,

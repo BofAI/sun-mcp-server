@@ -26,6 +26,7 @@ out/
 # Testing
 coverage/
 .nyc_output/
+.npm-cache/
 
 # IDEs and editors
 .idea/
@@ -60,3 +61,7 @@ config.local.json
 
 jest.config.js
 Library
+
+# AI tools
+.claude
+.private

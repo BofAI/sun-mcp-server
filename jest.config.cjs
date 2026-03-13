@@ -9,5 +9,8 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@scure/bip39|@scure/bip32|@noble/hashes|@bankofai/agent-wallet)/)',
+  ],
 };
 
