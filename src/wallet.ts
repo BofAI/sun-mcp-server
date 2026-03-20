@@ -1,5 +1,9 @@
 import { createReadonlyTronWeb, type Wallet } from "@bankofai/sun-kit";
-import { resolveWalletProvider, type BaseWallet, type Eip712Capable } from "@bankofai/agent-wallet";
+import {
+  resolveWalletProvider,
+  type Wallet as BaseWallet,
+  type Eip712Capable,
+} from "@bankofai/agent-wallet";
 import type { TronWeb } from "tronweb";
 
 export type { Wallet };
@@ -7,27 +11,6 @@ export type { Wallet };
 let _wallet: Wallet | null = null;
 
 export async function initWallet(): Promise<void> {
-  const privateKey = process.env.AGENT_WALLET_PRIVATE_KEY?.trim() || process.env.TRON_PRIVATE_KEY?.trim() || "";
-  const mnemonic = process.env.AGENT_WALLET_MNEMONIC?.trim() || process.env.TRON_MNEMONIC?.trim() || "";
-  const accountIndex = process.env.AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX?.trim() || process.env.TRON_MNEMONIC_ACCOUNT_INDEX?.trim() || "";
-  const walletPassword = process.env.AGENT_WALLET_PASSWORD?.trim() ?? "";
-  const walletDir = process.env.AGENT_WALLET_DIR?.trim() ?? "";
-  const configuredModes = [privateKey, mnemonic, walletPassword].filter(Boolean).length;
-
-  if (configuredModes > 1) {
-    throw new Error("Set only one of TRON_PRIVATE_KEY, TRON_MNEMONIC, or AGENT_WALLET_PASSWORD.");
-  }
-  if (configuredModes === 0) {
-    _wallet = null;
-    return;
-  }
-
-  process.env.AGENT_WALLET_PRIVATE_KEY = privateKey;
-  process.env.AGENT_WALLET_MNEMONIC = mnemonic;
-  process.env.AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX = accountIndex;
-  process.env.AGENT_WALLET_PASSWORD = walletPassword;
-  process.env.AGENT_WALLET_DIR = walletDir;
-
   const provider = resolveWalletProvider({ network: "tron" });
   const activeWallet = await provider.getActiveWallet();
   _wallet = new AgentWalletAdapter(activeWallet);
@@ -36,7 +19,7 @@ export async function initWallet(): Promise<void> {
 export function getWallet(): Wallet {
   if (!_wallet) {
     throw new Error(
-      "No wallet configured. Set PRIVATE_KEY, MNEMONIC, WALLET_PASSWORD, AGENT_WALLET_PASSWORD, TRON_PRIVATE_KEY, or TRON_MNEMONIC for agent-wallet.",
+      "No wallet configured. Set AGENT_WALLET_PRIVATE_KEY, AGENT_WALLET_MNEMONIC, AGENT_WALLET_PASSWORD for agent-wallet.",
     );
   }
   return _wallet;
