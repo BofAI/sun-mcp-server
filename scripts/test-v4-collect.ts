@@ -3,57 +3,59 @@
  * 本地测试 V4 Collect Fees（领取手续费）。
  *
  * 使用前请在项目根目录配置 .env：
- *   TRON_PRIVATE_KEY=你的十六进制私钥
+ *   AGENT_WALLET_PRIVATE_KEY=你的十六进制私钥
  *
  * 运行：npx ts-node scripts/test-v4-collect.ts
  */
 
-import "dotenv/config";
-import { SunKit } from "@bankofai/sun-kit";
-import { initWallet, getWallet, isWalletConfigured } from "../src/wallet";
+import 'dotenv/config'
+import { SunKit } from '@bankofai/sun-kit'
+import { initWallet, getWallet, isWalletConfigured } from '../src/wallet'
 
-const NETWORK = "nile";
+const NETWORK = 'nile'
 
-const TOKEN_0 = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf";
-const TOKEN_1 = "TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK";
-const FEE = 500;
+const TOKEN_0 = 'TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf'
+const TOKEN_1 = 'TGjgvdTWWrybVLaVeFqSyVqJQWjxqRYbaK'
+const FEE = 500
 
 /** 替换为你实际持有的 V4 position tokenId */
-const TOKEN_ID = "59";
+const TOKEN_ID = '59'
 
 async function main() {
-  await initWallet();
+  await initWallet()
   if (!isWalletConfigured()) {
-    console.error("Error: No wallet configured. Set TRON_PRIVATE_KEY or TRON_MNEMONIC in .env");
-    process.exit(1);
+    console.error(
+      'Error: No wallet configured. Set AGENT_WALLET_PRIVATE_KEY or AGENT_WALLET_MNEMONIC in .env',
+    )
+    process.exit(1)
   }
-  const wallet = getWallet();
-  const kit = new SunKit({ wallet, network: NETWORK });
+  const wallet = getWallet()
+  const kit = new SunKit({ wallet, network: NETWORK })
 
-  const PM = SunKit.getCLPositionManagerAddress(NETWORK);
+  const PM = SunKit.getCLPositionManagerAddress(NETWORK)
 
-  console.log("=== V4 Collect Fees Test ===");
-  console.log("TRON_PRIVATE_KEY set:", !!process.env.TRON_PRIVATE_KEY);
-  console.log("network:", NETWORK);
-  console.log("CLPositionManager:", PM);
-  console.log("tokenId:", TOKEN_ID);
-  console.log("");
+  console.log('=== V4 Collect Fees Test ===')
+  console.log('AGENT_WALLET_PRIVATE_KEY set:', !!process.env.AGENT_WALLET_PRIVATE_KEY)
+  console.log('network:', NETWORK)
+  console.log('CLPositionManager:', PM)
+  console.log('tokenId:', TOKEN_ID)
+  console.log('')
 
-  console.log("--- Step 1: Read position info ---");
+  console.log('--- Step 1: Read position info ---')
   try {
-    const posInfo = await kit.getV4PositionInfo(NETWORK, PM, TOKEN_ID);
+    const posInfo = await kit.getV4PositionInfo(NETWORK, PM, TOKEN_ID)
     if (posInfo) {
-      console.log("Position info:");
-      console.log(JSON.stringify(posInfo, null, 2));
+      console.log('Position info:')
+      console.log(JSON.stringify(posInfo, null, 2))
     } else {
-      console.log("Position not found or not readable");
+      console.log('Position not found or not readable')
     }
   } catch (err) {
-    console.log("Could not read position info:", (err as Error).message);
+    console.log('Could not read position info:', (err as Error).message)
   }
-  console.log("");
+  console.log('')
 
-  console.log("--- Step 2: Collect fees ---");
+  console.log('--- Step 2: Collect fees ---')
   try {
     const result = await kit.collectPositionV4({
       network: NETWORK,
@@ -61,17 +63,17 @@ async function main() {
       token0: TOKEN_0,
       token1: TOKEN_1,
       fee: FEE,
-    });
+    })
 
-    console.log("Collect tx result:");
-    console.log(JSON.stringify(result, null, 2));
+    console.log('Collect tx result:')
+    console.log(JSON.stringify(result, null, 2))
   } catch (err: unknown) {
-    const error = err as Error;
-    console.error("Error name:", error?.name);
-    console.error("Error message:", error?.message);
-    if (error?.stack) console.error("Stack:\n", error.stack);
-    process.exit(1);
+    const error = err as Error
+    console.error('Error name:', error?.name)
+    console.error('Error message:', error?.message)
+    if (error?.stack) console.error('Stack:\n', error.stack)
+    process.exit(1)
   }
 }
 
-main();
+main()

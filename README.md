@@ -13,7 +13,10 @@ An MCP server for AI-driven DeFi operations on the TRON network through the SUN.
 - [Quick Start](#quick-start)
   - [Official Hosted MCP (Read-Only)](#official-hosted-mcp-read-only)
   - [Local Hosted MCP](#local-hosted-mcp)
-    - [Wallet Configuration (Optional)](#wallet-configuration-optional)
+    - [Configuration](#configuration)
+      - [Wallet Configuration](#wallet-configuration)
+      - [Network Configuration](#network-configuration)
+    - [Verify](#verify)
   - [Example Prompts](#example-prompts)
 - [Client Integration Guide](#client-integration-guide)
   - [Claude Desktop](#claude-desktop)
@@ -106,50 +109,30 @@ Run the server locally with full capabilities — including write operations if 
 npm install -g @bankofai/sun-mcp-server
 ```
 
+### Configuration
+
 #### Wallet Configuration
 
 Without a wallet, the server works in **read-only mode** — you can query prices, pools, positions, and more.
 
-To enable write operations (swaps, liquidity, contract calls), set exactly **one** wallet source:
+Wallets are managed through [`agent-wallet`](https://github.com/BofAI/agent-wallet?tab=readme-ov-file#quick-start) file-backed configuration. Install and configure `agent-wallet` first. This repository no longer reads or maps legacy `TRON_PRIVATE_KEY`, `TRON_MNEMONIC`, or `TRON_MNEMONIC_ACCOUNT_INDEX` wallet variables.
 
-**Option 1 (Recommended): [Agent Wallet](https://github.com/BofAI/agent-wallet#cli)** — password-protected encrypted keystore, purpose-built for AI agents. Private keys are never stored in plaintext.
+> **Note**
+> See [`agent-wallet`](https://github.com/BofAI/agent-wallet?tab=readme-ov-file#quick-start) for wallet file formats, local setup, and the full set of SDK-supported `AGENT_WALLET_*` options.
 
-```bash
-export AGENT_WALLET_PASSWORD=your_wallet_password
-export AGENT_WALLET_DIR=/absolute/path/to/.agent   # optional, defaults to ~/.agent
-```
+#### Network Configuration
 
-**Option 2: Private Key** — pass a hex private key directly.
+- `TRON_NETWORK` — optional network override, defaults to `mainnet`
+- `TRON_GRID_API_KEY` — optional TronGrid API key for higher-rate mainnet access
+- `TRON_RPC_URL` — optional custom TRON RPC endpoint
 
-```bash
-export AGENT_WALLET_PRIVATE_KEY=your_private_key
-# or
-export TRON_PRIVATE_KEY=your_private_key
-```
-
-**Option 3: Mnemonic** — derive a wallet from a BIP-39 seed phrase.
+Example:
 
 ```bash
-export AGENT_WALLET_MNEMONIC="word1 word2 word3 ..."
-# or
-export TRON_MNEMONIC="word1 word2 word3 ..."
-
-export AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX=0   # optional, default 0
-# or
-export TRON_MNEMONIC_ACCOUNT_INDEX=0            # optional, default 0
+export TRON_NETWORK=mainnet
+export TRON_GRID_API_KEY="<YOUR_TRONGRID_API_KEY_HERE>"
+export TRON_RPC_URL=https://your-tron-rpc.example
 ```
-
-> **Security warning:** Option 2 and 3 store keys in plaintext (environment variables / `.env` files), which carries a risk of key leakage. Use them only with small amounts of funds for testing. For production or larger balances, use Agent Wallet (Option 1).
-
-Optional runtime settings:
-
-```bash
-export TRON_NETWORK=mainnet              # mainnet (default), nile, or shasta
-export TRON_GRID_API_KEY=your_api_key    # recommended for production
-export TRON_RPC_URL=https://your-rpc     # custom RPC endpoint
-```
-
-The server auto-loads `.env` files via `dotenv`, so you can put these in a `.env` file instead of exporting them.
 
 **stdio** — the MCP client spawns and manages the server process automatically. No manual server management needed.
 
@@ -159,7 +142,7 @@ claude mcp add sun-mcp-server sun-mcp-server
 
 # With wallet and runtime settings
 claude mcp add sun-mcp-server sun-mcp-server \
-  -e TRON_PRIVATE_KEY=your_private_key
+  -e AGENT_WALLET_PRIVATE_KEY=your_private_key
 ```
 
 Environment variables passed via `-e` are injected into the server process. Claude starts the server when it needs SUN.IO tools, and stops it when done.
@@ -442,7 +425,7 @@ This reduces client-side orchestration and keeps the MCP interface simpler than 
 ## Troubleshooting
 
 **Write tools fail with "no wallet configured"**
-You are running in read-only mode. Set exactly one wallet source (`AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY`, `AGENT_WALLET_MNEMONIC` / `TRON_MNEMONIC`, or `AGENT_WALLET_PASSWORD`) and restart the server.
+You are running in read-only mode. Set exactly one wallet source (`AGENT_WALLET_PRIVATE_KEY`, `AGENT_WALLET_MNEMONIC`, or `AGENT_WALLET_PASSWORD`) and restart the server.
 
 **Server rejects startup with "conflicting wallet modes"**
 More than one wallet source is set. Remove the extras so that only one of the three wallet environment variable groups is present.
@@ -458,7 +441,7 @@ Verify `MCP_SERVER_HOST`, `MCP_SERVER_PORT`, and `MCP_SERVER_PATH` match what yo
 
 ## Security Considerations
 
-- Treat `AGENT_WALLET_PRIVATE_KEY` / `TRON_PRIVATE_KEY`, `AGENT_WALLET_MNEMONIC` / `TRON_MNEMONIC`, and `AGENT_WALLET_PASSWORD` as production secrets.
+- Treat `AGENT_WALLET_PRIVATE_KEY`, `AGENT_WALLET_MNEMONIC`, and `AGENT_WALLET_PASSWORD` as production secrets.
 - Configure exactly one wallet source at a time. The server rejects conflicting wallet modes.
 - Prefer read-only deployments when you only need market data or position inspection.
 - Do not expose a write-enabled Streamable HTTP deployment directly to the public internet without authentication and transport security.
