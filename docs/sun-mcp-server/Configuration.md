@@ -26,20 +26,19 @@ Default sample configuration in `config.json`:
 
 Write operations (swaps, liquidity management) require a TRON wallet.
 
-Configure exactly one wallet source. If more than one is set, startup will fail. If none are set, the server runs in read-only mode.
+Wallet configuration is managed through [`agent-wallet`](https://github.com/BofAI/agent-wallet?tab=readme-ov-file#quick-start). Install and configure `agent-wallet` first, then provide wallet settings using the SDK-supported `AGENT_WALLET_*` options documented there.
+
+This project no longer documents wallet field-by-field configuration in its own docs. Use the `agent-wallet` documentation as the source of truth for wallet file formats, local setup, supported flags, and environment variables.
+
+If no wallet is configured, the server runs in read-only mode.
+
+The runtime settings below are still supported by this server:
 
 | Variable | Description |
 |----------|-------------|
-| `AGENT_WALLET_PRIVATE_KEY` | Hex private key (with or without `0x` prefix) |
-| `AGENT_WALLET_MNEMONIC` | BIP-39 mnemonic phrase (12 or 24 words) |
-| `AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX` | HD wallet derivation index for `AGENT_WALLET_MNEMONIC` (default: `0`) |
-| `AGENT_WALLET_PASSWORD` | Password for an existing agent-wallet keystore |
-| `AGENT_WALLET_DIR` | Optional path to the agent-wallet secrets directory |
 | `TRON_GRID_API_KEY` | Optional TronGrid API key |
 | `TRON_RPC_URL` | Override for TRON RPC endpoint |
 | `TRON_NETWORK` | Optional default network for SunKit (`mainnet` by default) |
-
-**Security**: Keep private keys, mnemonics, and wallet passwords in environment variables or a secret manager. Never commit them to source control.
 
 ## SUNSWAP Contract Addresses
 
