@@ -1,1 +1,1 @@
-export { registerSunswapTools, type SunswapToolsDeps } from './sunswap';
+export { registerSunswapTools, type SunswapToolsDeps } from './sunswap'

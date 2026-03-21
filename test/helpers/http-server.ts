@@ -3,26 +3,26 @@
  * Sets up a simple HTTP server that serves static files for testing HTTP fetching
  */
 
-import http from "http";
-import fs from "fs";
-import path from "path";
-import { URL } from "url";
+import http from 'http'
+import fs from 'fs'
+import path from 'path'
+import { URL } from 'url'
 
 export interface ServerConfig {
-  port: number;
-  host: string;
+  port: number
+  host: string
 }
 
 const DEFAULT_CONFIG: ServerConfig = {
   port: 8888,
-  host: "localhost",
-};
+  host: 'localhost',
+}
 
 export class TestHttpServer {
-  private server: http.Server | null = null;
-  private config: ServerConfig;
-  private fixturesPath: string;
-  private activePort: number | null = null;
+  private server: http.Server | null = null
+  private config: ServerConfig
+  private fixturesPath: string
+  private activePort: number | null = null
 
   /**
    * Create a new test HTTP server
@@ -30,8 +30,8 @@ export class TestHttpServer {
    * @param config Server configuration
    */
   constructor(fixturesPath: string, config?: Partial<ServerConfig>) {
-    this.fixturesPath = path.resolve(process.cwd(), fixturesPath);
-    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.fixturesPath = path.resolve(process.cwd(), fixturesPath)
+    this.config = { ...DEFAULT_CONFIG, ...config }
   }
 
   /**
@@ -40,70 +40,70 @@ export class TestHttpServer {
   start(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.server) {
-        return resolve();
+        return resolve()
       }
 
       this.server = http.createServer((req, res) => {
         if (!req.url) {
-          res.statusCode = 404;
-          res.end("Not found");
-          return;
+          res.statusCode = 404
+          res.end('Not found')
+          return
         }
 
-        console.log(`Test server received request: ${req.method} ${req.url}`);
+        console.log(`Test server received request: ${req.method} ${req.url}`)
 
         try {
-          const parsedUrl = new URL(req.url, `http://${this.config.host}:${this.config.port}`);
+          const parsedUrl = new URL(req.url, `http://${this.config.host}:${this.config.port}`)
           // Remove leading slash and decode URI components
-          const pathName = decodeURIComponent(parsedUrl.pathname.replace(/^\//, ""));
-          const filePath = path.join(this.fixturesPath, pathName);
+          const pathName = decodeURIComponent(parsedUrl.pathname.replace(/^\//, ''))
+          const filePath = path.join(this.fixturesPath, pathName)
 
-          console.log(`Looking for file: ${filePath}`);
+          console.log(`Looking for file: ${filePath}`)
 
           // Check if the file exists
           if (!fs.existsSync(filePath)) {
-            console.error(`File not found: ${filePath}`);
-            res.statusCode = 404;
-            res.end(`Not found: ${pathName}`);
-            return;
+            console.error(`File not found: ${filePath}`)
+            res.statusCode = 404
+            res.end(`Not found: ${pathName}`)
+            return
           }
 
           // Set the appropriate content type
-          if (filePath.endsWith(".json")) {
-            res.setHeader("Content-Type", "application/json");
-          } else if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
-            res.setHeader("Content-Type", "text/yaml");
+          if (filePath.endsWith('.json')) {
+            res.setHeader('Content-Type', 'application/json')
+          } else if (filePath.endsWith('.yaml') || filePath.endsWith('.yml')) {
+            res.setHeader('Content-Type', 'text/yaml')
           } else {
-            res.setHeader("Content-Type", "text/plain");
+            res.setHeader('Content-Type', 'text/plain')
           }
 
           // Read the file synchronously to avoid issues with streaming
-          const fileContent = fs.readFileSync(filePath, "utf-8");
-          res.statusCode = 200;
-          res.end(fileContent);
+          const fileContent = fs.readFileSync(filePath, 'utf-8')
+          res.statusCode = 200
+          res.end(fileContent)
         } catch (error) {
-          console.error("Error handling request:", error);
-          res.statusCode = 500;
-          res.end("Internal server error");
+          console.error('Error handling request:', error)
+          res.statusCode = 500
+          res.end('Internal server error')
         }
-      });
+      })
 
       this.server.listen(this.config.port, this.config.host, () => {
-        const address = this.server?.address();
-        if (address && typeof address === "object") {
-          this.activePort = address.port;
+        const address = this.server?.address()
+        if (address && typeof address === 'object') {
+          this.activePort = address.port
         } else {
-          this.activePort = this.config.port;
+          this.activePort = this.config.port
         }
-        console.log(`Test HTTP server started at http://${this.config.host}:${this.activePort}`);
-        resolve();
-      });
+        console.log(`Test HTTP server started at http://${this.config.host}:${this.activePort}`)
+        resolve()
+      })
 
-      this.server.on("error", (err) => {
-        console.error("Error starting test HTTP server:", err);
-        reject(err);
-      });
-    });
+      this.server.on('error', (err) => {
+        console.error('Error starting test HTTP server:', err)
+        reject(err)
+      })
+    })
   }
 
   /**
@@ -112,30 +112,30 @@ export class TestHttpServer {
   stop(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.server) {
-        return resolve();
+        return resolve()
       }
 
       this.server.close((err) => {
         if (err) {
-          console.error("Error closing test HTTP server:", err);
-          reject(err);
-          return;
+          console.error('Error closing test HTTP server:', err)
+          reject(err)
+          return
         }
 
-        this.server = null;
-        this.activePort = null;
-        console.log("Test HTTP server stopped");
-        resolve();
-      });
-    });
+        this.server = null
+        this.activePort = null
+        console.log('Test HTTP server stopped')
+        resolve()
+      })
+    })
   }
 
   /**
    * Get the base URL for the server
    */
   getBaseUrl(): string {
-    const port = this.activePort ?? this.config.port;
-    return `http://${this.config.host}:${port}`;
+    const port = this.activePort ?? this.config.port
+    return `http://${this.config.host}:${port}`
   }
 
   /**
@@ -143,6 +143,6 @@ export class TestHttpServer {
    * @param filePath The path to the file, relative to fixtures directory
    */
   getFileUrl(filePath: string): string {
-    return `${this.getBaseUrl()}/${filePath}`;
+    return `${this.getBaseUrl()}/${filePath}`
   }
 }

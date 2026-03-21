@@ -30,16 +30,14 @@
 
 | 变量 | 说明 |
 |------|------|
-| `TRON_PRIVATE_KEY` | 十六进制私钥（可带或不带 `0x` 前缀） |
-| `TRON_MNEMONIC` | BIP-39 助记词（12 或 24 个单词） |
-| `TRON_MNEMONIC_ACCOUNT_INDEX` | `TRON_MNEMONIC` 的 HD 钱包派生索引（默认: `0`） |
+| `AGENT_WALLET_PRIVATE_KEY` | 十六进制私钥（可带或不带 `0x` 前缀） |
+| `AGENT_WALLET_MNEMONIC` | BIP-39 助记词（12 或 24 个单词） |
+| `AGENT_WALLET_MNEMONIC_ACCOUNT_INDEX` | `AGENT_WALLET_MNEMONIC` 的 HD 钱包派生索引（默认: `0`） |
 | `AGENT_WALLET_PASSWORD` | 已存在 agent-wallet keystore 的密码 |
 | `AGENT_WALLET_DIR` | 可选的 agent-wallet secrets 目录路径 |
 | `TRON_GRID_API_KEY` | 可选 TronGrid API 密钥 |
 | `TRON_RPC_URL` | 覆盖 TRON RPC 节点地址 |
 | `TRON_NETWORK` | SunKit 默认网络（默认: `mainnet`） |
-
-服务底层统一通过 `@bankofai/agent-wallet` 解析钱包。`TRON_PRIVATE_KEY` 和 `TRON_MNEMONIC` 会先映射到 agent-wallet provider 所需环境变量，再解析 active wallet。
 
 **安全提示**: 将私钥、助记词和钱包密码保存在环境变量或密钥管理器中，切勿提交到代码仓库。
 
